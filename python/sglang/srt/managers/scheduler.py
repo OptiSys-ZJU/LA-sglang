@@ -1167,6 +1167,9 @@ class Scheduler(
             cache_hit_rate = adder.log_hit_tokens / (
                 adder.log_input_tokens + adder.log_hit_tokens
             )
+            self.stats.cache_hit_total_num += adder.log_hit_tokens
+            self.stats.cache_req_total_num += adder.log_input_tokens + adder.log_hit_tokens
+            self.stats.cache_total_hit_rate = self.stats.cache_hit_total_num / self.stats.cache_req_total_num
             self.stats.num_running_reqs = running_bs
             self.stats.num_used_tokens = num_used
             self.stats.token_usage = round(num_used / self.max_total_num_tokens, 2)
@@ -1179,6 +1182,7 @@ class Scheduler(
             self.stats.avg_request_queue_latency = total_queue_latency / num_new_seq
 
             self.metrics_collector.log_stats(self.stats)
+
         self._publish_kv_events()
 
     def log_decode_stats(
@@ -1349,7 +1353,6 @@ class Scheduler(
         # Check if the grammar is ready in the grammar queue
         if self.grammar_queue:
             self.move_ready_grammar_requests()
-
         # Handle the cases where prefill is not allowed
         if (
             self.running_batch.batch_is_full or len(self.waiting_queue) == 0

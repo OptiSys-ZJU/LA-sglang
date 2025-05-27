@@ -550,7 +550,7 @@ class GuardRadixCache(BasePrefixCache):
         return torch.cat(values) if values else torch.empty((0,), dtype=torch.int64, device=self.device)
     
 if __name__ == "__main__":
-    tree = GuardRadixCache(page_size=1, disable=False)
+    tree = GuardRadixCache(None, None, page_size=1, disable=False)
 
     tree.insert([1,2,3,4,5])
     tree.insert([1,2,3,4,5])
