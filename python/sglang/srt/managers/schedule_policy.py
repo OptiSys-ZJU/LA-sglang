@@ -26,6 +26,7 @@ from sglang.srt.managers.schedule_batch import Req, ScheduleBatch
 from sglang.srt.mem_cache.base_prefix_cache import BasePrefixCache
 from sglang.srt.mem_cache.memory_pool import TokenToKVPoolAllocator
 from sglang.srt.mem_cache.radix_cache import RadixCache, TreeNode
+from sglang.srt.mem_cache.blindoracle_radix_cache import BlineOracleRadixCache, TreeNode
 
 # Clip the estimation of max_new_tokens for the request whose max_new_tokens is very large.
 # This can prevent the server from being too conservative.
@@ -80,7 +81,7 @@ class SchedulePolicy:
         self.enable_hierarchical_cache = enable_hierarchical_cache
 
         # It is used to find the matching prefix for in-batch prefix caching.
-        self.waiting_queue_radix_tree = RadixCache(
+        self.waiting_queue_radix_tree = BlineOracleRadixCache(
             req_to_token_pool=None,
             token_to_kv_pool_allocator=None,
             page_size=1,

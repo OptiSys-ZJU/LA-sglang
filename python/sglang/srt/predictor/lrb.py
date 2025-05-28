@@ -1,0 +1,146 @@
+from sglang.srt.predictor.base_predictor import BinaryPredictor
+from sglang.srt.predictor.base_predictor import ReuseDistancePredictor
+import numpy as np
+import collections
+
+class LRBReuseDistancePredictor(ReuseDistancePredictor):
+    def __init__(self, shared_model, memory_window=1000000):
+        super().__init__()
+        self._model = shared_model
+        self.delta_nums = self._model.deltanums
+        self.edc_nums = self._model.edcnums
+        self.memory_window = memory_window
+        
+        
+        self.deltas = [{} for _ in range(self.delta_nums)]
+        self.edcs = [{} for _ in range(self.edc_nums)]
+        self.access_time_dict = {}
+        self.access_ts = 0
+        
+        self.belady_value = collections.defaultdict(float)  
+    
+    def predict_score(self, ts, pc, address, cache_state):
+        if address not in self.access_time_dict:
+            self.access_time_dict[address] = collections.deque()
+        
+        this_access_list = self.access_time_dict[address]
+        if len(this_access_list) == self.delta_nums + 1:
+            this_access_list.popleft()
+            this_access_list.append(self.access_ts)
+        else:
+            this_access_list.append(self.access_ts)
+        
+        for i in range(1, self.delta_nums + 1):
+            this_delta = self.deltas[i-1]
+            if len(this_access_list) > i:
+                delta_i = this_access_list[-i] - this_access_list[-i-1]
+                this_delta[address] = delta_i
+            else:
+                this_delta[address] = np.inf
+
+        delta1 = self.deltas[0][address]
+        for i in range(1, self.edc_nums + 1):
+            this_edc = self.edcs[i-1]
+            if address not in this_edc:
+                this_edc[address] = 0
+            this_edc[address] = 1 + this_edc[address] * 2 ** (-delta1 / (2 ** (9 + i)))
+
+        self.access_ts += 1
+        
+        pred = self._model((pc, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
+        
+        if pred == 0: 
+            self.belady_value[address] += 1.0
+        else:  
+            self.belady_value[address] = max(0, self.belady_value[address] - 0.1)
+            
+        if self.access_ts % 1000 == 0: 
+            to_delete = []
+            for key in self.belady_value:
+                if key not in self.access_time_dict or (self.access_ts - self.access_time_dict[key][-1]) > self.memory_window:
+                    to_delete.append(key)
+            for key in to_delete:
+                del self.belady_value[key]
+                if key in self.access_time_dict:
+                    del self.access_time_dict[key]
+                for i in range(self.delta_nums):
+                    if key in self.deltas[i]:
+                        del self.deltas[i][key]
+                for i in range(self.edc_nums):
+                    if key in self.edcs[i]:
+                        del self.edcs[i][key]
+        
+        return pred
+
+
+class LRBBinaryPredictor(BinaryPredictor):
+    def __init__(self, shared_model, threshold, memory_window=1000000):
+        super().__init__()
+        self._model = shared_model
+        self.delta_nums = self._model.deltanums
+        self.edc_nums = self._model.edcnums
+        self.memory_window = memory_window
+        self.threshold = threshold
+        
+        self.deltas = [{} for _ in range(self.delta_nums)]
+        self.edcs = [{} for _ in range(self.edc_nums)]
+        self.access_time_dict = {}
+        self.access_ts = 0
+        
+        self.belady_value = collections.defaultdict(float)  
+    
+    def predict_score(self, ts, pc, address, cache_state):
+        if address not in self.access_time_dict:
+            self.access_time_dict[address] = collections.deque()
+        
+        this_access_list = self.access_time_dict[address]
+        if len(this_access_list) == self.delta_nums + 1:
+            this_access_list.popleft()
+            this_access_list.append(self.access_ts)
+        else:
+            this_access_list.append(self.access_ts)
+        
+        for i in range(1, self.delta_nums + 1):
+            this_delta = self.deltas[i-1]
+            if len(this_access_list) > i:
+                delta_i = this_access_list[-i] - this_access_list[-i-1]
+                this_delta[address] = delta_i
+            else:
+                this_delta[address] = np.inf
+
+        delta1 = self.deltas[0][address]
+        for i in range(1, self.edc_nums + 1):
+            this_edc = self.edcs[i-1]
+            if address not in this_edc:
+                this_edc[address] = 0
+            this_edc[address] = 1 + this_edc[address] * 2 ** (-delta1 / (2 ** (9 + i)))
+
+        self.access_ts += 1
+        
+        ypred = self._model((pc, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
+        pred = 0
+        if ypred > self.threshold:
+            pred = 1
+
+        if pred == 0: 
+            self.belady_value[address] += 1.0
+        else:  
+            self.belady_value[address] = max(0, self.belady_value[address] - 0.1)
+            
+        if self.access_ts % 1000 == 0: 
+            to_delete = []
+            for key in self.belady_value:
+                if key not in self.access_time_dict or (self.access_ts - self.access_time_dict[key][-1]) > self.memory_window:
+                    to_delete.append(key)
+            for key in to_delete:
+                del self.belady_value[key]
+                if key in self.access_time_dict:
+                    del self.access_time_dict[key]
+                for i in range(self.delta_nums):
+                    if key in self.deltas[i]:
+                        del self.deltas[i][key]
+                for i in range(self.edc_nums):
+                    if key in self.edcs[i]:
+                        del self.edcs[i][key]
+        
+        return pred
