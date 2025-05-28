@@ -141,6 +141,7 @@ class SchedulerStats:
     cache_hit_total_num: float = 0.0
     cache_req_total_num: float = 0.0
     cache_total_hit_rate: float = 0.0
+    pool_available_size: float = 0.0
     num_grammar_queue_reqs: int = 0
     spec_accept_length: float = 0.0
     avg_request_queue_latency: float = 0.0
@@ -211,6 +212,13 @@ class SchedulerMetricsCollector:
         self.cache_total_hit_rate = Gauge(
             name="sglang:cache_total_hit_rate",
             documentation="The prefix cache total hit rate.",
+            labelnames=labels.keys(),
+            multiprocess_mode="mostrecent",
+        )
+
+        self.pool_available_size = Gauge(
+            name="sglang:pool_available_size",
+            documentation="Ramaining available size (number of tokens)",
             labelnames=labels.keys(),
             multiprocess_mode="mostrecent",
         )
@@ -289,6 +297,7 @@ class SchedulerMetricsCollector:
         self._log_gauge(self.num_grammar_queue_reqs, stats.num_grammar_queue_reqs)
         self._log_gauge(self.cache_hit_rate, stats.cache_hit_rate)
         self._log_gauge(self.cache_total_hit_rate, stats.cache_total_hit_rate)
+        self._log_gauge(self.pool_available_size, stats.pool_available_size)
         self._log_gauge(self.spec_accept_length, stats.spec_accept_length)
 
         # Disaggregation metrics

@@ -127,7 +127,7 @@ from sglang.srt.managers.utils import validate_input_length
 from sglang.srt.mem_cache.chunk_cache import ChunkCache
 from sglang.srt.mem_cache.hiradix_cache import HiRadixCache
 from sglang.srt.mem_cache.radix_cache import RadixCache
-from sglang.srt.mem_cache.blindoracle_radix_cache import BlineOracleRadixCache
+from sglang.srt.mem_cache.blindoracle_radix_cache import BlindOracleRadixCache
 from sglang.srt.metrics.collector import SchedulerMetricsCollector, SchedulerStats
 from sglang.srt.model_executor.forward_batch_info import ForwardMode, PPProxyTensors
 from sglang.srt.reasoning_parser import ReasoningParser
@@ -520,7 +520,7 @@ class Scheduler(
                     hicache_write_policy=server_args.hicache_write_policy,
                 )
             else:
-                self.tree_cache = BlineOracleRadixCache(
+                self.tree_cache = BlindOracleRadixCache(
                     req_to_token_pool=self.req_to_token_pool,
                     token_to_kv_pool_allocator=self.token_to_kv_pool_allocator,
                     page_size=self.page_size,
@@ -1171,6 +1171,7 @@ class Scheduler(
             self.stats.cache_hit_total_num += adder.log_hit_tokens
             self.stats.cache_req_total_num += adder.log_input_tokens + adder.log_hit_tokens
             self.stats.cache_total_hit_rate = self.stats.cache_hit_total_num / self.stats.cache_req_total_num
+            self.stats.pool_available_size = self.token_to_kv_pool_allocator.available_size()
             self.stats.num_running_reqs = running_bs
             self.stats.num_used_tokens = num_used
             self.stats.token_usage = round(num_used / self.max_total_num_tokens, 2)
@@ -1466,7 +1467,6 @@ class Scheduler(
             self.chunked_req.is_chunked += 1
 
         # Print stats
-        logger.info(f"self.attn_tp_rank: {self.attn_tp_rank}")
         if self.attn_tp_rank == 0:
             self.log_prefill_stats(adder, can_run_list, running_bs)
 

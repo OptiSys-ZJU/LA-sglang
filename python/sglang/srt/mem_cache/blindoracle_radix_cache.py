@@ -102,7 +102,7 @@ def _key_match_paged(key0: List, key1: List, page_size: int):
     return i
 
 
-class BlineOracleRadixCache(BasePrefixCache):
+class BlindOracleRadixCache(BasePrefixCache):
     def __init__(
         self,
         req_to_token_pool: ReqToTokenPool,
@@ -512,7 +512,7 @@ class BlineOracleRadixCache(BasePrefixCache):
 
 
 if __name__ == "__main__":
-    tree = RadixCache(None, None, page_size=1, disable=False)
+    tree = BlindOracleRadixCache(None, None, page_size=1, disable=False)
 
     tree.insert("Hello")
     tree.insert("Hello")
