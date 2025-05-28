@@ -1358,7 +1358,7 @@ class Scheduler(
             self.running_batch.batch_is_full or len(self.waiting_queue) == 0
         ) and self.chunked_req is None:
             return None
-
+        
         running_bs = len(self.running_batch.reqs)
         # Ignore the check if self.chunked_req is not None.
         # In the non-PP case, when self.chunked_req is not None, num_allocatable_reqs should always be greater than 0,
@@ -1465,6 +1465,7 @@ class Scheduler(
             self.chunked_req.is_chunked += 1
 
         # Print stats
+        logger.info(f"self.attn_tp_rank: {self.attn_tp_rank}")
         if self.attn_tp_rank == 0:
             self.log_prefill_stats(adder, can_run_list, running_bs)
 
