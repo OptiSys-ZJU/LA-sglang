@@ -356,14 +356,14 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def _match_prefix_helper(self, node: TreeNode, key: List):
         node.last_access_time = time.monotonic()
-        #self._predictor_access(node)
+        self._predictor_access(node)
         child_key = self.get_child_key_fn(key)
 
         value = []
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
             child.last_access_time = time.monotonic()
-            #self._predictor_access(child)
+            self._predictor_access(child)
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
                 new_node = self._split_node(child.key, child, prefix_len)
