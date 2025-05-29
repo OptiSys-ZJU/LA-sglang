@@ -37,12 +37,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         
         self.belady_value = collections.defaultdict(float)  
 
-    def access(self, key):
-        address = hash(tuple(key))
-        pred = self.predict_score(address)
-        return pred
-    
-    def predict_score(self, address):
+    def access(self, address):
         if address not in self.access_time_dict:
             self.access_time_dict[address] = collections.deque()
         
@@ -52,7 +47,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             this_access_list.append(self.access_ts)
         else:
             this_access_list.append(self.access_ts)
-        
+
         for i in range(1, self.delta_nums + 1):
             this_delta = self.deltas[i-1]
             if len(this_access_list) > i:
@@ -69,8 +64,8 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             this_edc[address] = 1 + this_edc[address] * 2 ** (-delta1 / (2 ** (9 + i)))
 
         self.access_ts += 1
-        
-        #pred = self._model((pc, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
+
+    def predict(self, address):
         pred = self._model((1, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
         
         if pred == 0: 

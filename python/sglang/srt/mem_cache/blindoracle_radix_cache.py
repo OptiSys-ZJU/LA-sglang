@@ -56,6 +56,7 @@ class TreeNode:
         self.lock_ref = 0
         self.last_access_time = time.monotonic()
         self.pred = 0
+        self.pred_valid = 0
 
         self.hit_count = 0
         # indicating the node is loading KV cache from host
@@ -271,6 +272,12 @@ class BlindOracleRadixCache(BasePrefixCache):
     def total_size(self):
         return self._total_size_helper()
 
+    def _predict(self, nodes: List[TreeNode]):
+        for node in nodes:
+            if node.pred_valid == 0:
+                node.pred = self.predictor.predict(hash(tuple(node.key)))
+                node.pred_valid = 1
+
     def evict(self, num_tokens: int):
         if self.disable:
             return
@@ -278,6 +285,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.token_to_kv_pool_allocator.record_eviction(num_tokens)
 
         leaves = self._collect_leaves()
+        self._predict(leaves)
         heapq.heapify(leaves)
 
         num_evicted = 0
@@ -348,7 +356,6 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def _match_prefix_helper(self, node: TreeNode, key: List):
         node.last_access_time = time.monotonic()
-        node.pred = self.predictor.access(node.key)
 
         child_key = self.get_child_key_fn(key)
 
@@ -356,13 +363,11 @@ class BlindOracleRadixCache(BasePrefixCache):
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
             child.last_access_time = time.monotonic()
-            child.pred = self.predictor.access(child.key)
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
                 new_node = self._split_node(child.key, child, prefix_len)
                 value.append(new_node.value)
                 node = new_node
-                node.pred = self.predictor.access(node.key)
                 break
             else:
                 value.append(child.value)
@@ -392,10 +397,14 @@ class BlindOracleRadixCache(BasePrefixCache):
         self._record_store_event(child)
 
         return new_node
+    
+    def _predictor_access(self, node: TreeNode):
+        self.predictor.access(node.key)
+        node.pred_valid = 0
 
     def _insert_helper(self, node: TreeNode, key: List, value):
         node.last_access_time = time.monotonic()
-        node.pred = self.predictor.access(node.key)
+        self._predictor_access(node)
         if len(key) == 0:
             return 0
 
@@ -405,7 +414,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         while len(key) > 0 and child_key in node.children.keys():
             node = node.children[child_key]
             node.last_access_time = time.monotonic()
-            node.pred = self.predictor.access(node.key)
+            self._predictor_access(node)
+            self.predictor.access(node.key)
             prefix_len = self.key_match_fn(node.key, key)
             total_prefix_length += prefix_len
             key = key[prefix_len:]
@@ -423,7 +433,7 @@ class BlindOracleRadixCache(BasePrefixCache):
             new_node.parent = node
             new_node.key = key
             new_node.value = value
-            new_node.pred = self.predictor.access(new_node.key)
+            self._predictor_access(node)
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
             self._record_store_event(new_node)

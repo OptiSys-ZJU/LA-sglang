@@ -16,6 +16,7 @@ from sglang.srt.disaggregation.kv_events import (
 from sglang.srt.managers.schedule_batch import global_server_args_dict
 from sglang.srt.mem_cache.base_prefix_cache import BasePrefixCache
 from sglang.srt.mem_cache.memory_pool import ReqToTokenPool, TokenToKVPoolAllocator
+from sglang.srt.predictor.lrb import LRBReuseDistancePredictor
 
 if TYPE_CHECKING:
     from sglang.srt.managers.schedule_batch import Req
@@ -94,6 +95,8 @@ class GuardRadixCache(BasePrefixCache):
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
 
+        self.predictor = LRBReuseDistancePredictor()
+
         self.evicted_in_phase = set()
         self.rand_evict_budget = 0
 
@@ -130,17 +133,9 @@ class GuardRadixCache(BasePrefixCache):
         self.U.clear()
         self.current_phase = 0
         self.current_request_key = None
-
-    def _popu_predictor(self, nodes: List[TreeNode]) -> dict:
-        """Dummy predictor that returns random reuse distances for Belady algorithm.
-        In real implementation, this should be replaced with actual predictor.
-        
-        Args:
-            nodes: List of unguarded leaf nodes
-        Returns:
-            dict mapping node to reuse distance (higher means farther reuse)
-        """
-        return {node: self.timestamp + self.timestamp / node.freq for node in nodes}
+    
+    def _predict(self, nodes: List[TreeNode]) -> dict:
+        return {node: self.predictor.predict(hash(tuple(node.key))) for node in nodes}
 
     def _dummy_predictor(self, nodes: List[TreeNode]) -> dict:
         """Dummy predictor that returns random reuse distances for Belady algorithm.
@@ -323,7 +318,7 @@ class GuardRadixCache(BasePrefixCache):
                 # Strategy 2: Belady algorithm on unguarded nodes
                 unguarded_candidates = [node for node in evictable_leaves if not node.guarded]
                 if unguarded_candidates:
-                    predictions = self._popu_predictor(unguarded_candidates)
+                    predictions = self._predict(unguarded_candidates)
                     # Choose node with maximum reuse distance (farthest reuse)
                     victim = max(unguarded_candidates, key=lambda x: predictions[x])
 
