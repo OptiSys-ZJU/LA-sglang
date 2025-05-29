@@ -68,27 +68,26 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
     def predict(self, address):
         pred = self._model((1, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
         
-        if pred == 0: 
-            self.belady_value[address] += 1.0
-        else:  
-            self.belady_value[address] = max(0, self.belady_value[address] - 0.1)
+        # if pred == 0: 
+        #     self.belady_value[address] += 1.0
+        # else:  
+        #     self.belady_value[address] = max(0, self.belady_value[address] - 0.1)
             
-        if self.access_ts % 1000 == 0:
-            to_delete = []
-            for key in self.belady_value:
-                if key not in self.access_time_dict or (self.access_ts - self.access_time_dict[key][-1]) > self.memory_window:
-                    to_delete.append(key)
-            for key in to_delete:
-                del self.belady_value[key]
-                if key in self.access_time_dict:
-                    del self.access_time_dict[key]
-                for i in range(self.delta_nums):
-                    if key in self.deltas[i]:
-                        del self.deltas[i][key]
-                for i in range(self.edc_nums):
-                    if key in self.edcs[i]:
-                        del self.edcs[i][key]
-        
+        # if self.access_ts % 1000 == 0:
+        #     to_delete = []
+        #     for key in self.belady_value:
+        #         if key not in self.access_time_dict or (self.access_ts - self.access_time_dict[key][-1]) > self.memory_window:
+        #             to_delete.append(key)
+        #     for key in to_delete:
+        #         del self.belady_value[key]
+        #         if key in self.access_time_dict:
+        #             del self.access_time_dict[key]
+        #         for i in range(self.delta_nums):
+        #             if key in self.deltas[i]:
+        #                 del self.deltas[i][key]
+        #         for i in range(self.edc_nums):
+        #             if key in self.edcs[i]:
+        #                 del self.edcs[i][key]
         return pred
 
 
