@@ -469,6 +469,7 @@ class GuardRadixCache(BasePrefixCache):
 
             if prefix_len < len(node.key):
                 new_node = self._split_node(node.key, node, prefix_len)
+                self._predictor_access(node)
                 self._predictor_access(new_node)
                 if self._judge_evicted_in_phase(new_node):
                     new_node.guarded = True
