@@ -1,5 +1,6 @@
 from collections import defaultdict
 import random
+import logging
 import time
 from functools import partial
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple
@@ -20,6 +21,8 @@ from sglang.srt.predictor.lrb import LRBReuseDistancePredictor
 
 if TYPE_CHECKING:
     from sglang.srt.managers.schedule_batch import Req
+
+logger = logging.getLogger(__name__)
 
 class TreeNode:
 
@@ -141,6 +144,7 @@ class GuardRadixCache(BasePrefixCache):
             if node.pred_valid == 0:
                 node.pred = self.predictor.predict(hash(tuple(node.key)))
                 if node.pred == -1:
+                    logger("!!!!!!!!!!!!!!!!!!!!!!!! problem !!!!!!!!!!!!!!")
                     print("!!!!!!!!!!!!!!!!!!!!!!!! problem !!!!!!!!!!!!!!")
                 node.pred_valid = 1
 
