@@ -83,8 +83,8 @@ class SchedulePolicy:
 
         # It is used to find the matching prefix for in-batch prefix caching.
         #self.waiting_queue_radix_tree = RadixCache(
-        self.waiting_queue_radix_tree = BlindOracleRadixCache(
-        #self.waiting_queue_radix_tree = GuardRadixCache(
+        #self.waiting_queue_radix_tree = BlindOracleRadixCache(
+        self.waiting_queue_radix_tree = GuardRadixCache(
             req_to_token_pool=None,
             token_to_kv_pool_allocator=None,
             page_size=1,
