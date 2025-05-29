@@ -66,8 +66,8 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.access_ts += 1
 
     def predict(self, address):
-        if address not in self.access_time_dict:
-            return -1
+        #if address not in self.access_time_dict:
+        #    return -1
         pred = self._model((1, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
         
         # if pred == 0: 

@@ -404,9 +404,9 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def _insert_helper(self, node: TreeNode, key: List, value):
         node.last_access_time = time.monotonic()
-        self._predictor_access(node)
         if len(key) == 0:
             return 0
+        self._predictor_access(node)
 
         child_key = self.get_child_key_fn(key)
 

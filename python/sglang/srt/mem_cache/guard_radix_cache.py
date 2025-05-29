@@ -144,7 +144,7 @@ class GuardRadixCache(BasePrefixCache):
             if node.pred_valid == 0:
                 node.pred = self.predictor.predict(hash(tuple(node.key)))
                 if node.pred == -1:
-                    logger("!!!!!!!!!!!!!!!!!!!!!!!! problem !!!!!!!!!!!!!!")
+                    logger.warning("!!!!!!!!!!!!!!!!!!!!!!!! problem !!!!!!!!!!!!!!")
                     print("!!!!!!!!!!!!!!!!!!!!!!!! problem !!!!!!!!!!!!!!")
                 node.pred_valid = 1
 
