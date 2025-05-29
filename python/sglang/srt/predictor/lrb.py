@@ -18,8 +18,14 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.access_ts = 0
         
         self.belady_value = collections.defaultdict(float)  
+
+    def access(self, key):
+        address = hash(tuple(key))
+        pred = self.predict_score(address)
+        self.timestamp += 1
+        return pred
     
-    def predict_score(self, ts, pc, address, cache_state):
+    def predict_score(self, address):
         if address not in self.access_time_dict:
             self.access_time_dict[address] = collections.deque()
         
@@ -47,14 +53,15 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         self.access_ts += 1
         
-        pred = self._model((pc, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
+        #pred = self._model((pc, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
+        pred = self._model((1, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
         
         if pred == 0: 
             self.belady_value[address] += 1.0
         else:  
             self.belady_value[address] = max(0, self.belady_value[address] - 0.1)
             
-        if self.access_ts % 1000 == 0: 
+        if self.access_ts % 1000 == 0:
             to_delete = []
             for key in self.belady_value:
                 if key not in self.access_time_dict or (self.access_ts - self.access_time_dict[key][-1]) > self.memory_window:
