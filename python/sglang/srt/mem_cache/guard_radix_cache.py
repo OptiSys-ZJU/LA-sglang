@@ -140,6 +140,8 @@ class GuardRadixCache(BasePrefixCache):
         for node in nodes:
             if node.pred_valid == 0:
                 node.pred = self.predictor.predict(hash(tuple(node.key)))
+                if node.pred == -1:
+                    print("!!!!!!!!!!!!!!!!!!!!!!!! problem !!!!!!!!!!!!!!")
                 node.pred_valid = 1
 
     def _dummy_predictor(self, nodes: List[TreeNode]) -> dict:
@@ -451,9 +453,9 @@ class GuardRadixCache(BasePrefixCache):
 
     def _insert_helper(self, node: TreeNode, key: List, value):
         node.last_access_time = time.time()
-        self._predictor_access(node)
         if len(key) == 0:
             return 0
+        self._predictor_access(node)
 
         child_key = self.get_child_key_fn(key)
 
