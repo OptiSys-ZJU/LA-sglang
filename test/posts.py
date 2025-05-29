@@ -41,9 +41,10 @@ if __name__ == '__main__':
     duplicate = False
     mode = ['train', 'validation']
     dataset_name = 'oasst1'
-    model_name = 'DeepSeek-R1-Distill-Qwen-14B'
+    model_name = 'DeepSeek-R1-Distill-Qwen-1.5B'
     async_mode = False
     max_concurrency = 20
+    req_num_limit = 1000
 
     url = "http://localhost:30000/v1/chat/completions"
     
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     with open(file_name, 'r', encoding='utf-8') as f:
         all_reqs = json.load(f)
         for m in mode:
-            reqs = all_reqs[m]
+            reqs = all_reqs[m][:req_num_limit]
             if async_mode:
                 results = asyncio.run(send_async_requests_with_limit(url, reqs, max_concurrency))
             else:
