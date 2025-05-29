@@ -143,6 +143,7 @@ class SchedulerStats:
     cache_total_hit_rate: float = 0.0
     pool_available_size: float = 0.0
     cache_evicted_num: float = 0.0
+    cache_value_unit: float = 0.0
     num_grammar_queue_reqs: int = 0
     spec_accept_length: float = 0.0
     avg_request_queue_latency: float = 0.0
@@ -231,6 +232,13 @@ class SchedulerMetricsCollector:
             multiprocess_mode="mostrecent",
         )
 
+        self.cache_value_unit = Gauge(
+            name="sglang:cache_value_unit",
+            documentation="The size of a cached token",
+            labelnames=labels.keys(),
+            multiprocess_mode="mostrecent",
+        )
+
         self.spec_accept_length = Gauge(
             name="sglang:spec_accept_length",
             documentation="The average acceptance length of speculative decoding.",
@@ -307,6 +315,7 @@ class SchedulerMetricsCollector:
         self._log_gauge(self.cache_total_hit_rate, stats.cache_total_hit_rate)
         self._log_gauge(self.pool_available_size, stats.pool_available_size)
         self._log_gauge(self.cache_evicted_num, stats.cache_evicted_num)
+        self._log_gauge(self.cache_value_unit, stats.cache_value_unit)
         self._log_gauge(self.spec_accept_length, stats.spec_accept_length)
 
         # Disaggregation metrics

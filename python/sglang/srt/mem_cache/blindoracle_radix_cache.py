@@ -392,6 +392,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         return new_node
 
     def _insert_helper(self, node: TreeNode, key: List, value):
+        self.token_to_kv_pool_allocator.value_unit = value[0]
         node.last_access_time = time.monotonic()
         node.pred = self.predictor.access(node.key)
         if len(key) == 0:
