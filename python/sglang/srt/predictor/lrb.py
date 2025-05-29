@@ -13,7 +13,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         
-        with open(os.path.join(current_dir, 'model/checkpoints/lightgbm/model_config.json', "r")) as f:
+        with open(os.path.join(current_dir, 'model/checkpoints/lightgbm/model_config.json'), "r") as f:
             model_config = json.load(f)
             deltanums = model_config['delta_nums']
             edcnums = model_config['edc_nums']
