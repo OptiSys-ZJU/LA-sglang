@@ -1,4 +1,4 @@
-from model.models import LightGBMModel
+from sglang.srt.predictor.model.models import LightGBMModel
 from sglang.srt.predictor.base_predictor import BinaryPredictor
 from sglang.srt.predictor.base_predictor import ReuseDistancePredictor
 import numpy as np
@@ -10,12 +10,12 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
     def __init__(self, memory_window=1000000):
         super().__init__()
         
-        with open('checkpoints/lightgbm/model_config.json', "r") as f:
+        with open('model/checkpoints/lightgbm/model_config.json', "r") as f:
             model_config = json.load(f)
             deltanums = model_config['delta_nums']
             edcnums = model_config['edc_nums']
 
-        this_dir = 'checkpoints/lightgbm'
+        this_dir = 'model/checkpoints/lightgbm'
         if not os.path.exists(this_dir):
             raise ValueError(f'Benchmark: {this_dir} not found checkpoints')
         this_ckpt_path = os.path.join(this_dir, f'{deltanums}_{edcnums}.txt')
