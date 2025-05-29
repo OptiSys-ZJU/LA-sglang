@@ -392,7 +392,6 @@ class BlindOracleRadixCache(BasePrefixCache):
         return new_node
 
     def _insert_helper(self, node: TreeNode, key: List, value):
-        self.token_to_kv_pool_allocator.value_unit = value[0]
         node.last_access_time = time.monotonic()
         node.pred = self.predictor.access(node.key)
         if len(key) == 0:
@@ -426,6 +425,8 @@ class BlindOracleRadixCache(BasePrefixCache):
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
             self._record_store_event(new_node)
+
+        self.token_to_kv_pool_allocator.evictable_size = self.evictable_size_
         return total_prefix_length
 
     def _print_helper(self, node: TreeNode, indent: int):

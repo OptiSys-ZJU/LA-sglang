@@ -182,7 +182,7 @@ class TokenToKVPoolAllocator:
         self.page_size = 1
 
         self.evicted_num = 0
-        self.value_unit = 0
+        self.evictable_size = 0
 
         self.free_slots = None
         self.is_not_in_free_group = True

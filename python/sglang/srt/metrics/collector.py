@@ -142,8 +142,8 @@ class SchedulerStats:
     cache_req_total_num: float = 0.0
     cache_total_hit_rate: float = 0.0
     pool_available_size: float = 0.0
+    pool_evictable_size: float = 0.0
     cache_evicted_num: float = 0.0
-    cache_value_unit: float = 0.0
     num_grammar_queue_reqs: int = 0
     spec_accept_length: float = 0.0
     avg_request_queue_latency: float = 0.0
@@ -225,16 +225,16 @@ class SchedulerMetricsCollector:
             multiprocess_mode="mostrecent",
         )
 
-        self.cache_evicted_num = Gauge(
-            name="sglang:cache_evicted_num",
-            documentation="Total number of evicted tokens",
+        self.pool_evictable_size = Gauge(
+            name="sglang:pool_evictable_size",
+            documentation="Evictable total size (unit: int64)",
             labelnames=labels.keys(),
             multiprocess_mode="mostrecent",
         )
 
-        self.cache_value_unit = Gauge(
-            name="sglang:cache_value_unit",
-            documentation="The size of a cached token",
+        self.cache_evicted_num = Gauge(
+            name="sglang:cache_evicted_num",
+            documentation="Total number of evicted tokens",
             labelnames=labels.keys(),
             multiprocess_mode="mostrecent",
         )
@@ -314,8 +314,8 @@ class SchedulerMetricsCollector:
         self._log_gauge(self.cache_hit_rate, stats.cache_hit_rate)
         self._log_gauge(self.cache_total_hit_rate, stats.cache_total_hit_rate)
         self._log_gauge(self.pool_available_size, stats.pool_available_size)
+        self._log_gauge(self.pool_evictable_size, stats.pool_evictable_size)
         self._log_gauge(self.cache_evicted_num, stats.cache_evicted_num)
-        self._log_gauge(self.cache_value_unit, stats.cache_value_unit)
         self._log_gauge(self.spec_accept_length, stats.spec_accept_length)
 
         # Disaggregation metrics
