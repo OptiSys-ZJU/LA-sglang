@@ -6,6 +6,13 @@ from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 import torch
 
+from sglang.srt.disaggregation.kv_events import (
+    AllBlocksCleared,
+    BlockRemoved,
+    BlockStored,
+    KVCacheEvent,
+)
+
 from sglang.srt.managers.schedule_batch import global_server_args_dict
 from sglang.srt.mem_cache.base_prefix_cache import BasePrefixCache
 from sglang.srt.mem_cache.memory_pool import ReqToTokenPool, TokenToKVPoolAllocator
@@ -78,11 +85,14 @@ class GuardRadixCache(BasePrefixCache):
         token_to_kv_pool_allocator: TokenToKVPoolAllocator,
         page_size: int,
         disable: bool = False,
+        enable_kv_cache_events: bool = False,
     ):
         self.req_to_token_pool = req_to_token_pool
         self.token_to_kv_pool_allocator = token_to_kv_pool_allocator
         self.page_size = page_size
         self.disable = disable
+        self.enable_kv_cache_events = enable_kv_cache_events
+        self.kv_event_queue = []
 
         self.evicted_in_phase = set()
         self.rand_evict_budget = 0
