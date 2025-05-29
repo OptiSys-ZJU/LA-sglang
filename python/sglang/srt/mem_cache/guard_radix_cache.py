@@ -33,7 +33,6 @@ class TreeNode:
 
         # GUARD algorithm specific attributes
         self.guarded = False           # whether the node is guarded in current phase
-        self.evicted_in_phase = False  # whether the node was evicted in current phase
 
         # predictor
         self.freq = 1
@@ -84,6 +83,9 @@ class GuardRadixCache(BasePrefixCache):
         self.token_to_kv_pool_allocator = token_to_kv_pool_allocator
         self.page_size = page_size
         self.disable = disable
+
+        self.evicted_in_phase = set()
+        self.rand_evict_budget = 0
 
         if self.token_to_kv_pool_allocator:
             self.device = self.token_to_kv_pool_allocator.device
@@ -154,7 +156,6 @@ class GuardRadixCache(BasePrefixCache):
                 all_nodes.append(node)
                 # Reset phase-specific flags
                 node.guarded = False
-                node.evicted_in_phase = False
             
             for child in node.children.values():
                 if not child.evicted:
@@ -162,34 +163,36 @@ class GuardRadixCache(BasePrefixCache):
         
         # All cached pages become unrequested old pages
         self.U = set(all_nodes)
+        self.evicted_in_phase = set()
+        self.rand_evict_budget = 0
 
-    def _was_evicted_in_current_phase(self, key: List[int]) -> bool:
-        """Check if a page with given key was evicted in current phase.
-        This is a simplified implementation - in practice, you might need
-        to maintain a more sophisticated tracking mechanism.
-        """
-        # For simplicity, we'll traverse the tree to find if any node
-        # with matching key prefix was evicted in current phase
-        def _check_subtree(node: TreeNode, remaining_key: List[int]) -> bool:
-            if not remaining_key:
-                return (node.evicted_in_phase, node)
+    # def _was_evicted_in_current_phase(self, key: List[int]) -> bool:
+    #     """Check if a page with given key was evicted in current phase.
+    #     This is a simplified implementation - in practice, you might need
+    #     to maintain a more sophisticated tracking mechanism.
+    #     """
+    #     # For simplicity, we'll traverse the tree to find if any node
+    #     # with matching key prefix was evicted in current phase
+    #     def _check_subtree(node: TreeNode, remaining_key: List[int]) -> bool:
+    #         if not remaining_key:
+    #             return (node.evicted_in_phase, node)
             
-            child_key = self.get_child_key_fn(remaining_key)
-            if child_key in node.children:
-                child = node.children[child_key]
-                prefix_len = self.key_match_fn(child.key, remaining_key)
-                if prefix_len > 0:
-                    if child.evicted_in_phase:
-                        return (True, child)
-                    return _check_subtree(child, remaining_key[prefix_len:])
-            return False
+    #         child_key = self.get_child_key_fn(remaining_key)
+    #         if child_key in node.children:
+    #             child = node.children[child_key]
+    #             prefix_len = self.key_match_fn(child.key, remaining_key)
+    #             if prefix_len > 0:
+    #                 if child.evicted_in_phase:
+    #                     return (True, child)
+    #                 return _check_subtree(child, remaining_key[prefix_len:])
+    #         return False
         
-        was_evicted, node = _check_subtree(self.root_node, key)
+    #     was_evicted, node = _check_subtree(self.root_node, key)
 
-        # guard this node
-        if was_evicted:
-            node.guarded = True
-        return was_evicted
+    #     # guard this node
+    #     if was_evicted:
+    #         node.guarded = True
+    #     return was_evicted
 
     def match_prefix(self, key: List[int], **kwargs) -> Tuple[torch.Tensor, TreeNode]:
         """Find the matching prefix from the radix tree with GUARD tracking."""
@@ -293,13 +296,19 @@ class GuardRadixCache(BasePrefixCache):
             victim = None
             
             # Check if current request was evicted in current phase
-            if (self.current_request_key is not None and 
-                self._was_evicted_in_current_phase(self.current_request_key)):
-                # Strategy 1: Random eviction from U
+            # if (self.current_request_key is not None and 
+            #     self._was_evicted_in_current_phase(self.current_request_key)):
+            #     # Strategy 1: Random eviction from U
+            #     u_candidates = [node for node in evictable_leaves if node in self.U]
+            #     if u_candidates:
+            #         victim = random.choice(u_candidates)
+            
+            if self.rand_evict_budget > 0:
                 u_candidates = [node for node in evictable_leaves if node in self.U]
                 if u_candidates:
                     victim = random.choice(u_candidates)
-            
+                    self.rand_evict_budget -= 1
+
             if victim is None:
                 # Strategy 2: Belady algorithm on unguarded nodes
                 unguarded_candidates = [node for node in evictable_leaves if not node.guarded]
@@ -314,7 +323,8 @@ class GuardRadixCache(BasePrefixCache):
                 num_evicted += len(victim.value)
                 
                 # Mark as evicted in current phase
-                victim.evicted_in_phase = True
+                address = hash(tuple(victim.key))
+                self.evicted_in_phase.add(address)
                 
                 # Remove from U if present
                 if victim in self.U:
@@ -438,6 +448,10 @@ class GuardRadixCache(BasePrefixCache):
             if prefix_len < len(node.key):
                 new_node = self._split_node(node.key, node, prefix_len)
                 node = new_node
+                address = hash(tuple(key))
+                if address in self.evicted_in_phase:
+                    node.guarded = True
+                    self.rand_evict_budget += 1
 
             if len(key):
                 child_key = self.get_child_key_fn(key)
@@ -447,8 +461,14 @@ class GuardRadixCache(BasePrefixCache):
             new_node.parent = node
             new_node.key = key
             new_node.value = value
+            address = hash(tuple(key))
+            if address in self.evicted_in_phase:
+                node.guarded = True
+                self.rand_evict_budget += 1
+
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
+
         return total_prefix_length
 
     def inc_lock_ref(self, node: TreeNode):
