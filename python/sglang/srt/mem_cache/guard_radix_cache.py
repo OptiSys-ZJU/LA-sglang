@@ -571,6 +571,41 @@ class GuardRadixCache(BasePrefixCache):
         _dfs_helper(self.root_node)
         return torch.cat(values) if values else torch.empty((0,), dtype=torch.int64, device=self.device)
     
+    def _record_store_event(self, node: TreeNode):
+        if self.enable_kv_cache_events:
+            block_hash = hash(tuple(node.key))
+            parent_block_hash = hash(tuple(node.parent.key))
+            self.kv_event_queue.append(
+                BlockStored(
+                    block_hashes=[block_hash],
+                    parent_block_hash=parent_block_hash,
+                    token_ids=node.key,
+                    block_size=len(node.key),
+                    lora_id=None,
+                )
+            )
+
+    def _record_remove_event(self, node: TreeNode):
+        if self.enable_kv_cache_events:
+            block_hash = hash(tuple(node.key))
+            self.kv_event_queue.append(BlockRemoved(block_hashes=[block_hash]))
+
+    def _record_all_cleared_event(self):
+        if self.enable_kv_cache_events:
+            self.kv_event_queue.append(AllBlocksCleared())
+
+    def take_events(self):
+        """Atomically takes all events and clears the queue.
+
+        Returns:
+            A list of KV cache events.
+        """
+        if not self.enable_kv_cache_events:
+            return []
+        events = self.kv_event_queue
+        self.kv_event_queue = []
+        return events
+    
 if __name__ == "__main__":
     tree = GuardRadixCache(None, None, page_size=1, disable=False)
 
