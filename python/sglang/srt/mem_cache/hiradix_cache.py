@@ -152,6 +152,8 @@ class HiRadixCache(RadixCache):
         return self.evictable_size_
 
     def evict(self, num_tokens: int):
+        self.token_to_kv_pool_allocator.record_eviction(num_tokens)
+
         leaves = self._collect_leaves_device()
         heapq.heapify(leaves)
 

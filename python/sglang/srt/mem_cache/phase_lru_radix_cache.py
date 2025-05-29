@@ -272,6 +272,8 @@ class PhaseLRURadixCache(BasePrefixCache):
     def evict(self, num_tokens: int):
         if self.disable:
             return
+        
+        self.token_to_kv_pool_allocator.record_eviction(num_tokens)
 
         leaves = self._collect_leaves()
         heapq.heapify(leaves)

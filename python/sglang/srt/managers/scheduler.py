@@ -1172,6 +1172,7 @@ class Scheduler(
             self.stats.cache_req_total_num += adder.log_input_tokens + adder.log_hit_tokens
             self.stats.cache_total_hit_rate = self.stats.cache_hit_total_num / self.stats.cache_req_total_num
             self.stats.pool_available_size = self.token_to_kv_pool_allocator.available_size()
+            self.stats.cache_evicted_num = self.token_to_kv_pool_allocator.evicted_num
             self.stats.num_running_reqs = running_bs
             self.stats.num_used_tokens = num_used
             self.stats.token_usage = round(num_used / self.max_total_num_tokens, 2)

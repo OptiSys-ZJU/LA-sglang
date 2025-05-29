@@ -268,6 +268,8 @@ class GuardRadixCache(BasePrefixCache):
         """GUARD eviction algorithm implementation."""
         if self.disable:
             return
+        
+        self.token_to_kv_pool_allocator.record_eviction(num_tokens)
 
         num_evicted = 0
         

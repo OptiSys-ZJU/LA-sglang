@@ -190,6 +190,9 @@ class TokenToKVPoolAllocator:
 
     def available_size(self):
         return len(self.free_slots)
+    
+    def record_eviction(self, num_evict):
+        self.evicted_num += num_evict
 
     def get_kvcache(self):
         return self._kvcache
