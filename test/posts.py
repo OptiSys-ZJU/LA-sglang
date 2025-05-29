@@ -60,3 +60,4 @@ if __name__ == '__main__':
                 results = asyncio.run(send_async_requests_with_limit(url, reqs, max_concurrency))
             else:
                 send_sync_requests_with_progress(url, reqs)
+            break
