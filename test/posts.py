@@ -44,7 +44,7 @@ if __name__ == '__main__':
     model_name = 'DeepSeek-R1-Distill-Qwen-1.5B'
     async_mode = False
     max_concurrency = 20
-    req_num_limit = 1000
+    req_num_limit = 400
 
     url = "http://localhost:30000/v1/chat/completions"
     
