@@ -40,7 +40,6 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
     def access(self, key):
         address = hash(tuple(key))
         pred = self.predict_score(address)
-        self.timestamp += 1
         return pred
     
     def predict_score(self, address):
