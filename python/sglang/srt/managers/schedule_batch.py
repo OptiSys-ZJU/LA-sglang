@@ -828,9 +828,6 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
     # The sum of all sequence lengths
     seq_lens_sum: int = None
 
-    # Total number of evictions
-    evicted_num: int = 0
-
     # For DP attention
     global_num_tokens: Optional[List[int]] = None
     global_num_tokens_for_logprob: Optional[List[int]] = None
