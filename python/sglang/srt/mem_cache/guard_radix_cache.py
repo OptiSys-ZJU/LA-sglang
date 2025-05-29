@@ -32,6 +32,8 @@ class TreeNode:
         self.value = None
         self.lock_ref = 0
         self.last_access_time = time.time()
+        self.pred = 0
+        self.pred_valid = 0
 
         self.hit_count = 0
         # indicating the node is loading KV cache from host
@@ -134,8 +136,11 @@ class GuardRadixCache(BasePrefixCache):
         self.current_phase = 0
         self.current_request_key = None
     
-    def _predict(self, nodes: List[TreeNode]) -> dict:
-        return {node: self.predictor.predict(hash(tuple(node.key))) for node in nodes}
+    def _predict(self, nodes: List[TreeNode]):
+        for node in nodes:
+            if node.pred_valid == 0:
+                node.pred = self.predictor.predict(hash(tuple(node.key)))
+                node.pred_valid = 1
 
     def _dummy_predictor(self, nodes: List[TreeNode]) -> dict:
         """Dummy predictor that returns random reuse distances for Belady algorithm.
@@ -318,9 +323,9 @@ class GuardRadixCache(BasePrefixCache):
                 # Strategy 2: Belady algorithm on unguarded nodes
                 unguarded_candidates = [node for node in evictable_leaves if not node.guarded]
                 if unguarded_candidates:
-                    predictions = self._predict(unguarded_candidates)
+                    self._predict(unguarded_candidates)
                     # Choose node with maximum reuse distance (farthest reuse)
-                    victim = max(unguarded_candidates, key=lambda x: predictions[x])
+                    victim = max(unguarded_candidates, key=lambda node: node.pred)
 
             # Step 4: Perform eviction
             if victim and victim.value is not None:
@@ -433,9 +438,14 @@ class GuardRadixCache(BasePrefixCache):
         child.value = child.value[split_len:]
         new_node.parent.children[self.get_child_key_fn(key)] = new_node
         return new_node
+    
+    def _predictor_access(self, node: TreeNode):
+        self.predictor.access(node.key)
+        node.pred_valid = 0
 
     def _insert_helper(self, node: TreeNode, key: List, value):
         node.last_access_time = time.time()
+        self._predictor_access(node)
         if len(key) == 0:
             return 0
 
@@ -445,6 +455,7 @@ class GuardRadixCache(BasePrefixCache):
         while len(key) > 0 and child_key in node.children.keys():
             node = node.children[child_key]
             node.last_access_time = time.time()
+            self._predictor_access(node)
             prefix_len = self.key_match_fn(node.key, key)
             total_prefix_length += prefix_len
             key = key[prefix_len:]
@@ -466,6 +477,7 @@ class GuardRadixCache(BasePrefixCache):
             new_node.parent = node
             new_node.key = key
             new_node.value = value
+            self._predictor_access(new_node)
             address = hash(tuple(key))
             if address in self.evicted_in_phase:
                 node.guarded = True

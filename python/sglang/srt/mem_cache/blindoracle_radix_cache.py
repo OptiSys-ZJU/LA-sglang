@@ -433,7 +433,7 @@ class BlindOracleRadixCache(BasePrefixCache):
             new_node.parent = node
             new_node.key = key
             new_node.value = value
-            self._predictor_access(node)
+            self._predictor_access(new_node)
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
             self._record_store_event(new_node)
