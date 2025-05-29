@@ -1,16 +1,31 @@
+from model.models import LightGBMModel
 from sglang.srt.predictor.base_predictor import BinaryPredictor
 from sglang.srt.predictor.base_predictor import ReuseDistancePredictor
 import numpy as np
 import collections
+import json
+import os
 
 class LRBReuseDistancePredictor(ReuseDistancePredictor):
-    def __init__(self, shared_model, memory_window=1000000):
+    def __init__(self, memory_window=1000000):
         super().__init__()
-        self._model = shared_model
+        
+        with open('checkpoints/lightgbm/model_config.json', "r") as f:
+            model_config = json.load(f)
+            deltanums = model_config['delta_nums']
+            edcnums = model_config['edc_nums']
+
+        this_dir = 'checkpoints/lightgbm'
+        if not os.path.exists(this_dir):
+            raise ValueError(f'Benchmark: {this_dir} not found checkpoints')
+        this_ckpt_path = os.path.join(this_dir, f'{deltanums}_{edcnums}.txt')
+        if not os.path.exists(this_ckpt_path):
+            raise ValueError(f'Benchmark: {this_ckpt_path} not found checkpoints')
+
+        self._model = LightGBMModel.from_config(deltanums, edcnums, this_ckpt_path)
         self.delta_nums = self._model.deltanums
         self.edc_nums = self._model.edcnums
         self.memory_window = memory_window
-        
         
         self.deltas = [{} for _ in range(self.delta_nums)]
         self.edcs = [{} for _ in range(self.edc_nums)]
