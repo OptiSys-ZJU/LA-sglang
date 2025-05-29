@@ -443,6 +443,12 @@ class GuardRadixCache(BasePrefixCache):
         self.predictor.access(hash(tuple(node.key)))
         node.pred_valid = 0
 
+    def _judge_evicted_in_phase(self, node: TreeNode):
+        address = hash(tuple(node.key))
+        if address in self.evicted_in_phase:
+            return True
+        return False
+
     def _insert_helper(self, node: TreeNode, key: List, value):
         node.last_access_time = time.time()
         self._predictor_access(node)
@@ -463,11 +469,11 @@ class GuardRadixCache(BasePrefixCache):
 
             if prefix_len < len(node.key):
                 new_node = self._split_node(node.key, node, prefix_len)
-                node = new_node
-                address = hash(tuple(key))
-                if address in self.evicted_in_phase:
-                    node.guarded = True
+                self._predictor_access(new_node)
+                if self._judge_evicted_in_phase(new_node):
+                    new_node.guarded = True
                     self.rand_evict_budget += 1
+                node = new_node
 
             if len(key):
                 child_key = self.get_child_key_fn(key)
@@ -478,9 +484,8 @@ class GuardRadixCache(BasePrefixCache):
             new_node.key = key
             new_node.value = value
             self._predictor_access(new_node)
-            address = hash(tuple(key))
-            if address in self.evicted_in_phase:
-                node.guarded = True
+            if self._judge_evicted_in_phase(new_node):
+                new_node.guarded = True
                 self.rand_evict_budget += 1
 
             node.children[child_key] = new_node
