@@ -440,7 +440,7 @@ class GuardRadixCache(BasePrefixCache):
         return new_node
     
     def _predictor_access(self, node: TreeNode):
-        self.predictor.access(node.key)
+        self.predictor.access(hash(tuple(node.key)))
         node.pred_valid = 0
 
     def _insert_helper(self, node: TreeNode, key: List, value):

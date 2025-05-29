@@ -10,7 +10,7 @@ class PLECOPredictor(ReuseDistancePredictor):
         self.prev_occs = {}
         self.p = False
 
-    def predict_score(self, address):
+    def predict(self, address):
         this_weight = (self.timestamp + 10) ** (-1.8) * np.exp(-self.timestamp / 670)
         self.weights.append(this_weight)
         self.sum_weights += this_weight
@@ -22,8 +22,5 @@ class PLECOPredictor(ReuseDistancePredictor):
 
         return pred
     
-    def access(self, key):
-        address = hash(tuple(key))
-        pred = self.predict_score(address)
+    def access(self, address):
         self.timestamp += 1
-        return pred

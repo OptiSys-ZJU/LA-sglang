@@ -399,7 +399,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         return new_node
     
     def _predictor_access(self, node: TreeNode):
-        self.predictor.access(node.key)
+        self.predictor.access(hash(tuple(node.key)))
         node.pred_valid = 0
 
     def _insert_helper(self, node: TreeNode, key: List, value):
@@ -415,7 +415,7 @@ class BlindOracleRadixCache(BasePrefixCache):
             node = node.children[child_key]
             node.last_access_time = time.monotonic()
             self._predictor_access(node)
-            self.predictor.access(node.key)
+            self.predictor.access(hash(tuple(node.key)))
             prefix_len = self.key_match_fn(node.key, key)
             total_prefix_length += prefix_len
             key = key[prefix_len:]

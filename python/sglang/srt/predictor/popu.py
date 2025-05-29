@@ -6,13 +6,10 @@ class POPUPredictor(ReuseDistancePredictor):
         self.counts = {}
         self.timestamp = 1
 
-    def access(self, key):
-        address = hash(tuple(key))
-        pred = self.predict_score(address)
+    def access(self, address):
         self.timestamp += 1
-        return pred
     
-    def predict_score(self, address):
+    def predict(self, address):
         if address not in self.counts:
             self.counts[address] = 0
         self.counts[address] += 1
