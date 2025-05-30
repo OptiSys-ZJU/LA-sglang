@@ -37,7 +37,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         # online training
         self.training_config = model_config['training']
         self.training_interval = 10000
-        self.f = open("model/access_history.txt", "a") 
+        self.f = open(os.path.join(current_dir, "model/access_history.txt"), "a") 
         self.existing_online_training = 0
         
         self.deltas = [{} for _ in range(self.delta_nums)]
