@@ -61,7 +61,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         
 
     def access(self, address):
-        self.f.write(f"1, {address}")
+        self.f.write(f"1, {address}\n")
         self.f.flush()
 
         if address not in self.access_time_dict:
