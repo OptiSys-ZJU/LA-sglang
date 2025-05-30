@@ -521,8 +521,8 @@ class Scheduler(
                     hicache_write_policy=server_args.hicache_write_policy,
                 )
             else:
-                self.tree_cache = RadixCache(
-                #self.tree_cache = BlindOracleRadixCache(
+                #self.tree_cache = RadixCache(
+                self.tree_cache = BlindOracleRadixCache(
                 #self.tree_cache = GuardRadixCache(
                     req_to_token_pool=self.req_to_token_pool,
                     token_to_kv_pool_allocator=self.token_to_kv_pool_allocator,
