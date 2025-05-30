@@ -1,11 +1,14 @@
 from sglang.srt.predictor.model.models import LightGBMModel
 from sglang.srt.predictor.base_predictor import BinaryPredictor
 from sglang.srt.predictor.base_predictor import ReuseDistancePredictor
+
+import lightgbm as lgb
 import numpy as np
 import collections
 import json
 import os
 
+from concurrent.futures import ThreadPoolExecutor
 
 class LRBReuseDistancePredictor(ReuseDistancePredictor):
     def __init__(self, memory_window=1000000):
@@ -13,6 +16,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         
+        model_config = None
         with open(os.path.join(current_dir, 'model/checkpoints/lightgbm/model_config.json'), "r") as f:
             model_config = json.load(f)
             deltanums = model_config['delta_nums']
@@ -29,6 +33,12 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.delta_nums = self._model.deltanums
         self.edc_nums = self._model.edcnums
         self.memory_window = memory_window
+
+        # online training
+        self.training_config = model_config['training']
+        self.training_interval = 10000
+        self.f = open("model/access_history.txt", "a") 
+        self.existing_online_training = 0
         
         self.deltas = [{} for _ in range(self.delta_nums)]
         self.edcs = [{} for _ in range(self.edc_nums)]
@@ -37,7 +47,23 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         
         self.belady_value = collections.defaultdict(float)  
 
+    # def _training_task(self):
+    #     bst = lgb.train(self.training_config, train_data, valid_sets=[valid_data], callbacks=[
+    #         lgb.early_stopping(stopping_rounds=50),
+    #     ])
+
+    # def _online_training(self):
+    #     if self.existing_online_training == 1:
+    #         return
+        
+    #     executor = ThreadPoolExecutor(max_workers=1)
+    #     future = executor.submit(train_lgb)
+        
+
     def access(self, address):
+        self.f.write(f"1, {address}")
+        self.f.flush()
+
         if address not in self.access_time_dict:
             self.access_time_dict[address] = collections.deque()
         
@@ -64,6 +90,9 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             this_edc[address] = 1 + this_edc[address] * 2 ** (-delta1 / (2 ** (9 + i)))
 
         self.access_ts += 1
+
+        #if self.access_ts % self.training_interval == 0:
+        #    self._online_training()
 
     def predict(self, address):
         #if address not in self.access_time_dict:
