@@ -18,6 +18,7 @@ from sglang.srt.managers.schedule_batch import global_server_args_dict
 from sglang.srt.mem_cache.base_prefix_cache import BasePrefixCache
 from sglang.srt.mem_cache.memory_pool import ReqToTokenPool, TokenToKVPoolAllocator
 from sglang.srt.predictor.lrb import LRBReuseDistancePredictor
+from sglang.srt.predictor.popu import POPUPredictor
 
 if TYPE_CHECKING:
     from sglang.srt.managers.schedule_batch import Req
@@ -100,7 +101,8 @@ class GuardRadixCache(BasePrefixCache):
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
 
-        self.predictor = LRBReuseDistancePredictor()
+        #self.predictor = LRBReuseDistancePredictor()
+        self.predictor = POPUPredictor()
 
         self.evicted_in_phase = set()
         self.rand_evict_budget = 0
@@ -502,6 +504,7 @@ class GuardRadixCache(BasePrefixCache):
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
 
+        self.token_to_kv_pool_allocator.evictable_size = self.evictable_size_
         return total_prefix_length
 
     def inc_lock_ref(self, node: TreeNode):
