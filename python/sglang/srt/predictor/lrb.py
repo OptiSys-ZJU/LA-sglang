@@ -89,7 +89,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             self.access_time_dict[address] = collections.deque()
         elif address in self.feature_history:
             self.features.append((*self.feature_history[address], self.access_ts))
-            if len(self.features > self.training_window):
+            if len(self.features) > self.training_window:
                 self.features.popleft()
             self.training_accumu_num += 1
             #logger.info(f"address: {address}, features num: {len(self.features)}")
