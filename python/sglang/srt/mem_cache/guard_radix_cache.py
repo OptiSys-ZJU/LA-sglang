@@ -212,7 +212,7 @@ class GuardRadixCache(BasePrefixCache):
     def _match_prefix_helper(self, node: TreeNode, key: List):
         """Match prefix helper with GUARD access tracking."""
         node.last_access_time = time.time()
-        self._predictor_access(node)
+        #self._predictor_access(node)
         node.freq += 1
         
         # GUARD: If node is in U (unrequested), remove it and mark as guarded
@@ -225,7 +225,7 @@ class GuardRadixCache(BasePrefixCache):
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
             child.last_access_time = time.time()
-            self._predictor_access(child)
+            #self._predictor_access(child)
             child.freq += 1
             
             # GUARD: Track access to child node
@@ -235,8 +235,8 @@ class GuardRadixCache(BasePrefixCache):
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
                 new_node = self._split_node(child.key, child, prefix_len)
-                self._predictor_access(child)
-                self._predictor_access(new_node)
+                #self._predictor_access(child)
+                #self._predictor_access(new_node)
                 value.append(new_node.value)
                 node = new_node
                 break
