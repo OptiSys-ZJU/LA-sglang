@@ -1,0 +1,16 @@
+{
+    "delta_nums": 10,
+    "edc_nums": 10,
+    "training": {
+        "boosting_type": "gbdt", 
+        "objective": "regression", 
+        "metric": "l2",
+        "learning_rate": 0.01,
+        "num_boost_round": 8000,
+        "num_leaves": 64, 
+        "max_depth": 8,
+        "subsample": 0.8, 
+        "colsample_bytree": 0.8,
+        "min_data_in_leaf": 15
+    }
+}

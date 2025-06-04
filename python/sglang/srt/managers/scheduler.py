@@ -93,6 +93,8 @@ from sglang.srt.managers.io_struct import (
     RpcReqOutput,
     SetInternalStateReq,
     SetInternalStateReqOutput,
+    ConfigureCachingAlgorithmReq,
+    ConfigureCachingAlgorithmReqOutput,
     SlowDownReqInput,
     SlowDownReqOutput,
     TokenizedEmbeddingReqInput,
@@ -127,6 +129,9 @@ from sglang.srt.managers.utils import validate_input_length
 from sglang.srt.mem_cache.chunk_cache import ChunkCache
 from sglang.srt.mem_cache.hiradix_cache import HiRadixCache
 from sglang.srt.mem_cache.radix_cache import RadixCache
+from sglang.srt.mem_cache.blindoracle_radix_cache import BlindOracleRadixCache
+from sglang.srt.mem_cache.phase_lru_radix_cache import PhaseLRURadixCache
+from sglang.srt.mem_cache.guard_radix_cache import GuardRadixCache
 from sglang.srt.metrics.collector import SchedulerMetricsCollector, SchedulerStats
 from sglang.srt.model_executor.forward_batch_info import ForwardMode, PPProxyTensors
 from sglang.srt.reasoning_parser import ReasoningParser
@@ -223,6 +228,14 @@ class Scheduler(
                 self.dp_size,
             )
         )
+
+        self.algo_type = "blindoracle"
+        self.algo_class_map = {
+            "default": RadixCache,
+            "phaselru": PhaseLRURadixCache,
+            "guard": GuardRadixCache,
+            "blindoracle": BlindOracleRadixCache,
+        }
 
         # Init inter-process communication
         context = zmq.Context(2)
@@ -387,6 +400,7 @@ class Scheduler(
         # Init schedule policy and new token estimation
         self.policy = SchedulePolicy(
             self.schedule_policy,
+            self.algo_type,
             self.tree_cache,
             self.enable_hierarchical_cache,
         )
@@ -455,6 +469,7 @@ class Scheduler(
                 (ProfileReq, self.profile),
                 (GetInternalStateReq, self.get_internal_state),
                 (SetInternalStateReq, self.set_internal_state),
+                (ConfigureCachingAlgorithmReq, self.configure_caching_algorithm),
                 (RpcReqInput, self.handle_rpc_request),
                 (ExpertDistributionReq, self.expert_distribution_handle),
             ]
@@ -519,7 +534,9 @@ class Scheduler(
                     hicache_write_policy=server_args.hicache_write_policy,
                 )
             else:
-                self.tree_cache = RadixCache(
+                # if not found, use RadixCache by default
+                self.cache_class = self.algo_class_map.get(self.algo_type, RadixCache)
+                self.tree_cache = self.cache_class(
                     req_to_token_pool=self.req_to_token_pool,
                     token_to_kv_pool_allocator=self.token_to_kv_pool_allocator,
                     page_size=self.page_size,
@@ -1167,6 +1184,12 @@ class Scheduler(
             cache_hit_rate = adder.log_hit_tokens / (
                 adder.log_input_tokens + adder.log_hit_tokens
             )
+            self.stats.cache_hit_total_num += adder.log_hit_tokens
+            self.stats.cache_req_total_num += adder.log_input_tokens + adder.log_hit_tokens
+            self.stats.cache_total_hit_rate = self.stats.cache_hit_total_num / self.stats.cache_req_total_num
+            self.stats.pool_available_size = self.token_to_kv_pool_allocator.available_size()
+            self.stats.pool_evictable_size = self.token_to_kv_pool_allocator.evictable_size
+            self.stats.cache_evicted_num = self.token_to_kv_pool_allocator.evicted_num
             self.stats.num_running_reqs = running_bs
             self.stats.num_used_tokens = num_used
             self.stats.token_usage = round(num_used / self.max_total_num_tokens, 2)
@@ -1179,6 +1202,7 @@ class Scheduler(
             self.stats.avg_request_queue_latency = total_queue_latency / num_new_seq
 
             self.metrics_collector.log_stats(self.stats)
+
         self._publish_kv_events()
 
     def log_decode_stats(
@@ -1349,7 +1373,6 @@ class Scheduler(
         # Check if the grammar is ready in the grammar queue
         if self.grammar_queue:
             self.move_ready_grammar_requests()
-
         # Handle the cases where prefill is not allowed
         if (
             self.running_batch.batch_is_full or len(self.waiting_queue) == 0
@@ -1923,6 +1946,11 @@ class Scheduler(
         return GetInternalStateReqOutput(
             internal_state=ret,
         )
+    
+    def configure_caching_algorithm(self, recv_req: ConfigureCachingAlgorithmReq):
+        self.algo_type = recv_req.algo_type
+        self.policy.policy_algo_type = recv_req.algo_type
+        logging.warning(f"Configure caching algorithm as {self.algo_type}")
 
     def set_internal_state(self, recv_req: SetInternalStateReq):
         server_args_dict = recv_req.server_args

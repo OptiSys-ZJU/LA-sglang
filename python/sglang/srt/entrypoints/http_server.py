@@ -52,6 +52,7 @@ from sglang.srt.managers.io_struct import (
     AbortReq,
     CloseSessionReqInput,
     ConfigureLoggingReq,
+    ConfigureCachingAlgorithmReq,
     EmbeddingReqInput,
     GenerateReqInput,
     GetWeightsByNameReqInput,
@@ -235,6 +236,13 @@ async def set_internal_state(obj: SetInternalStateReq, request: Request):
     return res
 
 
+@app.api_route("/configure_caching_algorithm", methods=["GET", "POST"])
+async def configure_caching_algorithm(obj: ConfigureCachingAlgorithmReq, request: Request):
+    """Configure the caching algorithm."""
+    await _global_state.tokenizer_manager.configure_caching_algorithm(obj)
+    return Response(status_code=200)
+
+
 # fastapi implicitly converts json in the request to obj (dataclass)
 @app.api_route("/generate", methods=["POST", "PUT"])
 async def generate_request(obj: GenerateReqInput, request: Request):
@@ -331,7 +339,6 @@ async def flush_cache():
         "(When there are running or waiting requests, the operation will not be performed.)\n",
         status_code=200 if ret.success else HTTPStatus.BAD_REQUEST,
     )
-
 
 @app.api_route("/start_profile", methods=["GET", "POST"])
 async def start_profile_async(obj: Optional[ProfileReqInput] = None):

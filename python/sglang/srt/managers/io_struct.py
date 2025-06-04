@@ -839,6 +839,13 @@ class SetInternalStateReqOutput:
     updated: bool
     server_args: Dict[str, Any]
 
+@dataclass
+class ConfigureCachingAlgorithmReq:
+    algo_type: str
+
+@dataclass
+class ConfigureCachingAlgorithmReqOutput:
+    pass
 
 @dataclass
 class ProfileReqInput:

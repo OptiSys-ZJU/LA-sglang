@@ -68,6 +68,7 @@ from sglang.srt.managers.io_struct import (
     BatchTokenIDOut,
     CloseSessionReqInput,
     ConfigureLoggingReq,
+    ConfigureCachingAlgorithmReq,
     EmbeddingReqInput,
     ExpertDistributionReq,
     ExpertDistributionReqOutput,
@@ -93,6 +94,7 @@ from sglang.srt.managers.io_struct import (
     SessionParams,
     SetInternalStateReq,
     SetInternalStateReqOutput,
+    ConfigureCachingAlgorithmReqOutput,
     SlowDownReqInput,
     SlowDownReqOutput,
     TokenizedEmbeddingReqInput,
@@ -196,6 +198,8 @@ class TokenizerManager:
         self.is_image_gen = self.model_config.is_image_gen
         self.context_len = self.model_config.context_len
         self.image_token_id = self.model_config.image_token_id
+
+        self.caching_algo = "default"
 
         if self.model_config.is_multimodal:
             import_processors()
@@ -302,6 +306,9 @@ class TokenizerManager:
         self.get_internal_state_communicator = _Communicator(
             self.send_to_scheduler, server_args.dp_size
         )
+        self.configure_caching_algorithm_communicator = _Communicator(
+            self.send_to_scheduler, server_args.dp_size
+        )
         self.set_internal_state_communicator = _Communicator(
             self.send_to_scheduler, server_args.dp_size
         )
@@ -365,6 +372,10 @@ class TokenizerManager:
                 (
                     GetInternalStateReqOutput,
                     self.get_internal_state_communicator.handle_recv,
+                ),
+                (
+                    ConfigureCachingAlgorithmReqOutput,
+                    self.configure_caching_algorithm_communicator.handle_recv,
                 ),
                 (
                     SetInternalStateReqOutput,
@@ -990,6 +1001,11 @@ class TokenizerManager:
             await self.set_internal_state_communicator(obj)
         )
         return [res.internal_state for res in responses]
+    
+    async def configure_caching_algorithm(
+        self, obj: ConfigureCachingAlgorithmReq
+    ) -> ConfigureCachingAlgorithmReqOutput:
+        await self.configure_caching_algorithm_communicator(obj)
 
     def get_log_request_metadata(self):
         max_length = None

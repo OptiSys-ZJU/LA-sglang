@@ -264,6 +264,8 @@ class RadixCache(BasePrefixCache):
         if self.disable:
             return
 
+        self.token_to_kv_pool_allocator.record_eviction(num_tokens)
+
         leaves = self._collect_leaves()
         heapq.heapify(leaves)
 
@@ -408,6 +410,8 @@ class RadixCache(BasePrefixCache):
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
             self._record_store_event(new_node)
+
+        self.token_to_kv_pool_allocator.evictable_size = self.evictable_size_
         return total_prefix_length
 
     def _print_helper(self, node: TreeNode, indent: int):
