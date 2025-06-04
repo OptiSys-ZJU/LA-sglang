@@ -41,7 +41,9 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         # online training
         self.training_config = model_config['training']
-        self.training_interval = 10000
+        self.training_interval = 2000
+        self.training_accumu_num = 0
+        self.training_window = 10000
         self.training_data = []
         self.existing_online_training = 0
         self.feature_history = {}
@@ -73,7 +75,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         model = await asyncio.to_thread(self._training_task)
         model.save_model(self._model_save_path)
         end = time.time()
-        self.features = []
+        self.features = collections.deque()
         logger.info(f"current_access_ts = {self.access_ts}, training time cost = {end - start}, training interval = {self.training_interval}")
         
         self._model = LightGBMModel.from_config(self.delta_nums, self.edc_nums, self._model_save_path)
@@ -87,8 +89,12 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             self.access_time_dict[address] = collections.deque()
         elif address in self.feature_history:
             self.features.append((*self.feature_history[address], self.access_ts))
-            logger.info(f"address: {address}, features num: {len(self.features)}")
-            if len(self.features) >= self.training_interval:
+            if len(self.features > self.training_window):
+                self.features.popleft()
+            self.training_accumu_num += 1
+            #logger.info(f"address: {address}, features num: {len(self.features)}")
+            if self.training_accumu_num >= self.training_interval:
+                self.training_accumu_num = 0
                 #logger.info(f"current features num: {len(self.features)}, time: {time.time()}")
                 asyncio.run(self._online_training())
 
