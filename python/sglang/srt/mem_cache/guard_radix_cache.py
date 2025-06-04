@@ -101,8 +101,8 @@ class GuardRadixCache(BasePrefixCache):
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
 
-        #self.predictor = LRBReuseDistancePredictor()
-        self.predictor = POPUPredictor()
+        self.predictor = LRBReuseDistancePredictor()
+        #self.predictor = POPUPredictor()
 
         self.evicted_in_phase = set()
         self.rand_evict_budget = 0
