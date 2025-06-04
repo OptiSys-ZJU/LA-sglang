@@ -85,12 +85,12 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         if address not in self.access_time_dict:
             self.access_time_dict[address] = collections.deque()
-        #elif address in self.feature_history:
-            #self.features.append((*self.feature_history[address], self.access_ts))
-            #logger.info(f"address: {address}, features num: {len(self.features)}")
-            #if len(self.features) >= self.training_interval:
+        elif address in self.feature_history:
+            self.features.append((*self.feature_history[address], self.access_ts))
+            logger.info(f"address: {address}, features num: {len(self.features)}")
+            if len(self.features) >= self.training_interval:
                 #logger.info(f"current features num: {len(self.features)}, time: {time.time()}")
-                #asyncio.run(self._online_training())
+                asyncio.run(self._online_training())
 
         this_access_list = self.access_time_dict[address]
         if len(this_access_list) == self.delta_nums + 1:
