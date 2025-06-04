@@ -6,11 +6,12 @@
         "objective": "regression", 
         "metric": "l2",
         "learning_rate": 0.01,
-        "num_boost_round": 8000,
+        "num_boost_round": 300,
         "num_leaves": 64, 
         "max_depth": 8,
         "subsample": 0.8, 
         "colsample_bytree": 0.8,
-        "min_data_in_leaf": 15
+        "min_data_in_leaf": 15,
+        "num_threads": 1
     }
 }
