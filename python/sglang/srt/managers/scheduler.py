@@ -229,7 +229,7 @@ class Scheduler(
             )
         )
 
-        self.algo_type = "guard"
+        self.algo_type = "blindoracle"
         self.algo_class_map = {
             "default": RadixCache,
             "phaselru": PhaseLRURadixCache,
