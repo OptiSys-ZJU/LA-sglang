@@ -41,7 +41,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         # online training
         self.training_config = model_config['training']
-        self.training_interval = 2000
+        self.training_interval = 500
         self.training_accumu_num = 0
         self.training_window = 10000
         self.training_data = []
