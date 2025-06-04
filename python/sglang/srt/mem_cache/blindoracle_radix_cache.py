@@ -54,7 +54,7 @@ class TreeNode:
         self.key = None
         self.value = None
         self.lock_ref = 0
-        self.last_access_time = time.monotonic()
+        self.last_access_ts = 0
         self.pred = 0
         self.pred_valid = 0
 
@@ -118,6 +118,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.disable = disable
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
+        self.access_ts = 0
         #self.predictor = POPUPredictor()
         #self.predictor = PLECOPredictor()
         self.predictor = LRBReuseDistancePredictor()
@@ -275,7 +276,7 @@ class BlindOracleRadixCache(BasePrefixCache):
     def _predict(self, nodes: List[TreeNode]):
         for node in nodes:
             if node.pred_valid == 0:
-                node.pred = self.predictor.predict(hash(tuple(node.key)))
+                node.pred = node.last_access_ts + self.predictor.predict(hash(tuple(node.key)))
                 node.pred_valid = 1
 
     def evict(self, num_tokens: int):
@@ -355,13 +356,11 @@ class BlindOracleRadixCache(BasePrefixCache):
     ##### Internal Helper Functions #####
 
     def _match_prefix_helper(self, node: TreeNode, key: List):
-        node.last_access_time = time.monotonic()
         child_key = self.get_child_key_fn(key)
 
         value = []
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
-            child.last_access_time = time.monotonic()
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
                 new_node = self._split_node(child.key, child, prefix_len)
@@ -399,10 +398,11 @@ class BlindOracleRadixCache(BasePrefixCache):
     
     def _predictor_access(self, node: TreeNode):
         self.predictor.access(hash(tuple(node.key)))
+        self.access_ts += 1
+        node.last_access_ts = self.access_ts
         node.pred_valid = 0
 
     def _insert_helper(self, node: TreeNode, key: List, value):
-        node.last_access_time = time.monotonic()
         if len(key) == 0:
             return 0
         self._predictor_access(node)
@@ -412,7 +412,6 @@ class BlindOracleRadixCache(BasePrefixCache):
         total_prefix_length = 0
         while len(key) > 0 and child_key in node.children.keys():
             node = node.children[child_key]
-            node.last_access_time = time.monotonic()
             self._predictor_access(node)
             prefix_len = self.key_match_fn(node.key, key)
             total_prefix_length += prefix_len

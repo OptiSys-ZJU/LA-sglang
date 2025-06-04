@@ -35,7 +35,7 @@ class TreeNode:
         self.key = None
         self.value = None
         self.lock_ref = 0
-        self.last_access_time = time.time()
+        self.last_access_ts = 0
         self.pred = 0
         self.pred_valid = 0
 
@@ -63,7 +63,7 @@ class TreeNode:
         return self.host_value is not None
 
     def __lt__(self, other: "TreeNode"):
-        return self.last_access_time < other.last_access_time
+        return self.last_access_ts < other.last_access_ts
 
 def _key_match_page_size1(key0: List, key1: List):
     i = 0
@@ -100,6 +100,7 @@ class GuardRadixCache(BasePrefixCache):
         self.disable = disable
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
+        self.access_ts = 0
 
         self.predictor = LRBReuseDistancePredictor()
         #self.predictor = POPUPredictor()
@@ -144,7 +145,7 @@ class GuardRadixCache(BasePrefixCache):
     def _predict(self, nodes: List[TreeNode]):
         for node in nodes:
             if node.pred_valid == 0:
-                node.pred = self.predictor.predict(hash(tuple(node.key)))
+                node.pred = node.last_access_ts + self.predictor.predict(hash(tuple(node.key)))
                 node.pred_valid = 1
 
     def _dummy_predictor(self, nodes: List[TreeNode]) -> dict:
@@ -211,7 +212,6 @@ class GuardRadixCache(BasePrefixCache):
 
     def _match_prefix_helper(self, node: TreeNode, key: List):
         """Match prefix helper with GUARD access tracking."""
-        node.last_access_time = time.time()
         #self._predictor_access(node)
         node.freq += 1
         
@@ -224,7 +224,6 @@ class GuardRadixCache(BasePrefixCache):
         value = []
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
-            child.last_access_time = time.time()
             #self._predictor_access(child)
             child.freq += 1
             
@@ -414,6 +413,8 @@ class GuardRadixCache(BasePrefixCache):
     
     def _predictor_access(self, node: TreeNode):
         self.predictor.access(hash(tuple(node.key)))
+        self.access_ts += 1
+        node.last_access_ts = self.access_ts
         node.pred_valid = 0
 
     def _judge_evicted_in_phase(self, node: TreeNode):
@@ -423,7 +424,6 @@ class GuardRadixCache(BasePrefixCache):
         return False
 
     def _insert_helper(self, node: TreeNode, key: List, value):
-        node.last_access_time = time.time()
         if len(key) == 0:
             return 0
         self._predictor_access(node)
@@ -433,7 +433,6 @@ class GuardRadixCache(BasePrefixCache):
         total_prefix_length = 0
         while len(key) > 0 and child_key in node.children.keys():
             node = node.children[child_key]
-            node.last_access_time = time.time()
             self._predictor_access(node)
             prefix_len = self.key_match_fn(node.key, key)
             total_prefix_length += prefix_len
