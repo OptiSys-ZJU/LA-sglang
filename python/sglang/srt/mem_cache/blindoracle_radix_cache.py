@@ -366,7 +366,9 @@ class BlindOracleRadixCache(BasePrefixCache):
             child = node.children[child_key]
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
+                original_key = child.key
                 new_node = self._split_node(child.key, child, prefix_len)
+                self._split_predictor_copy(original_key, child, new_node)
                 value.append(new_node.value)
                 node = new_node
                 break
@@ -410,8 +412,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         #    captured = self._capture_print()
         #    logger.info(f"tree structure: {captured}")
 
-    def _split_predictor_access(self, original_key, node: TreeNode, new_node: TreeNode):
-        self.predictor.split_access(hash(tuple(original_key)), hash(tuple(node.key)), hash(tuple(new_node.key)))
+    def _split_predictor_copy(self, original_key, node: TreeNode, new_node: TreeNode):
+        self.predictor.split_copy(hash(tuple(original_key)), hash(tuple(node.key)), hash(tuple(new_node.key)))
         node.last_access_ts = time.monotonic()
         new_node.last_access_ts = time.monotonic()
         node.pred_valid = 0
@@ -440,8 +442,9 @@ class BlindOracleRadixCache(BasePrefixCache):
 
             if prefix_len < len(node.key):
                 original_key = node.key
+                self._predictor_access(original_key)
                 new_node = self._split_node(node.key, node, prefix_len)
-                self._split_predictor_access(original_key, node, new_node)
+                self._split_predictor_copy(original_key, node, new_node)
                 node = new_node
 
             if len(key):
