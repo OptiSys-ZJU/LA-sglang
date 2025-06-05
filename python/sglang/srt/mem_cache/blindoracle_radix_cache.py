@@ -442,7 +442,7 @@ class BlindOracleRadixCache(BasePrefixCache):
 
             if prefix_len < len(node.key):
                 original_key = node.key
-                self._predictor_access(original_key)
+                self._predictor_access(node)
                 new_node = self._split_node(node.key, node, prefix_len)
                 self._split_predictor_copy(original_key, node, new_node)
                 node = new_node
