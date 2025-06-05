@@ -92,8 +92,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.existing_online_training = 0
         self.trained = 1
 
-    def split_access(self, original_address, child_addr, parent_addr):
-        self.access(original_address)
+    def split_copy(self, original_address, child_addr, parent_addr):
         # copy features from node with key = address
         self.access_time_dict[child_addr] = copy.deepcopy(self.access_time_dict[original_address])
         self.access_time_dict[parent_addr] = copy.deepcopy(self.access_time_dict[original_address])
