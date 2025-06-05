@@ -122,9 +122,9 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.disable = disable
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
-        self.predictor = POPUPredictor()
+        #self.predictor = POPUPredictor()
         #self.predictor = PLECOPredictor()
-        #self.predictor = LRBReuseDistancePredictor()
+        self.predictor = LRBReuseDistancePredictor()
 
         if self.token_to_kv_pool_allocator:
             self.device = self.token_to_kv_pool_allocator.device
@@ -302,6 +302,13 @@ class BlindOracleRadixCache(BasePrefixCache):
                 continue
 
             self.token_to_kv_pool_allocator.free(x.value)
+            
+            if num_evicted + len(x.value) > num_tokens:
+                num_to_evict = num_tokens - num_evicted
+                original_key = x.key
+                new_node = self._split_node(x.key, x, len(x.value) - num_to_evict)
+                self._split_predictor_copy(original_key, x, new_node)
+
             num_evicted += len(x.value)
             self._delete_leaf(x)
 
