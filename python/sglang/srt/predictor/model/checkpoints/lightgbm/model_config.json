@@ -14,6 +14,7 @@
         "bagging_freq": 5,
         "min_data_in_leaf": 30,
         "random_state": 42,
+        "verbose": -1,
         "num_threads": 1
     }
 }
