@@ -64,10 +64,10 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         X = np.array(train_data)
         y = np.array(labels)
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
-        #train_dataset = lgb.Dataset(X_train, label=np.log1p(y_train))
-        #valid_dataset = lgb.Dataset(X_val, label=np.log1p(y_val))
-        train_dataset = lgb.Dataset(X_train, label=y_train)
-        valid_dataset = lgb.Dataset(X_val, label=y_val)
+        train_dataset = lgb.Dataset(X_train, label=np.log1p(y_train))
+        valid_dataset = lgb.Dataset(X_val, label=np.log1p(y_val))
+        #train_dataset = lgb.Dataset(X_train, label=y_train)
+        #valid_dataset = lgb.Dataset(X_val, label=y_val)
         evals_result = {}
         model = lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset], valid_names=['val'],
                          callbacks=[lgb.early_stopping(stopping_rounds=50),
@@ -168,7 +168,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         if address not in self.access_time_dict:
             return 2**62
         pred = self._model((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
-        #pred = np.expm1(pred)
+        pred = np.expm1(pred)
         #logger.info(f"pred = {str(pred)}, features: {str((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))}")
         return pred
 
