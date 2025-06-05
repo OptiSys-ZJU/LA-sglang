@@ -67,7 +67,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         train_dataset = lgb.Dataset(X_train, label=np.log1p(y_train))
         valid_dataset = lgb.Dataset(X_val, label=np.log1p(y_val))
         evals_result = {}
-        model = lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset], valid_names=['val'], evals_result=evals_result,
+        model = lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset], valid_names=['val'],
                          callbacks=[lgb.early_stopping(stopping_rounds=50),
                                     lgb.record_evaluation(evals_result),
                                     lgb.log_evaluation(period=20)])
