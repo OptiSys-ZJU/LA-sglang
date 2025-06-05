@@ -69,7 +69,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         evals_result = {}  
         model = lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset], evals_result=evals_result,
                          callbacks=[lgb.early_stopping(stopping_rounds=50), lgb.log_evaluation(period=20)])
-        logger.info(f"eval results: {evals_result["val"]["rmse"]}")
+        logger.info(f"eval results: {evals_result['val']['rmse']}")
         return model
 
     async def _online_training(self):
