@@ -104,7 +104,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             self.deltas[i][new_address] = self.deltas[i][address]
         for i in range(0, self.edc_nums):
             self.edcs[i][new_address] = self.edcs[i][address]
-        self.access(new_address, 1)
+        self.access(new_address, add_feature=1)
 
     def access(self, address, add_feature = 0):
         self.access_ts += 1
