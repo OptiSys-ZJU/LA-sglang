@@ -48,7 +48,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.training_data = []
         self.existing_online_training = 0
         self.feature_history = {}
-        self.features = []
+        self.features = collections.deque()
         self.enable_online_training = 1
         
         self.deltas = [{} for _ in range(self.delta_nums)]
@@ -84,7 +84,6 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         model = await asyncio.to_thread(self._training_task)
         model.save_model(self._model_save_path)
         end = time.time()
-        self.features = collections.deque()
         logger.info(f"current_access_ts = {self.access_ts}, training time cost = {end - start}, #features = {len(self.features)}, interval = {self.training_interval}")
         
         self._model = LightGBMModel.from_config(self.delta_nums, self.edc_nums, self._model_save_path)
