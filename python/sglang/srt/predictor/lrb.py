@@ -82,6 +82,14 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.existing_online_training = 0
         self.trained = 1
 
+    def split_access(self, address, new_address):
+        self.access(address)
+        self.access_time_dict[new_address] = copy.deepcopy(self.access_time_dict[address])
+        for i in range(0, self.delta_nums):
+            self.deltas[i][new_address] = self.deltas[i][address]
+        for i in range(0, self.edc_nums):
+            self.edcs[i][new_address] = self.edcs[i][address]
+
     def access(self, address):
         self.access_ts += 1
 

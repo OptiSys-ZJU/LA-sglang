@@ -402,6 +402,14 @@ class BlindOracleRadixCache(BasePrefixCache):
         node.last_access_ts = self.access_ts
         node.pred_valid = 0
 
+    def _split_predictor_access(self, node: TreeNode, new_node: TreeNode):
+        self.predictor.split_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
+        self.access_ts += 1
+        node.last_access_ts = self.access_ts
+        new_node.last_access_ts = self.access_ts
+        node.pred_valid = 0
+        new_node.pred_valid = 0
+
     def _insert_helper(self, node: TreeNode, key: List, value):
         if len(key) == 0:
             return 0
@@ -420,8 +428,7 @@ class BlindOracleRadixCache(BasePrefixCache):
 
             if prefix_len < len(node.key):
                 new_node = self._split_node(node.key, node, prefix_len)
-                self._predictor_access(node)
-                self._predictor_access(new_node)
+                self._split_predictor_access(node, new_node)
                 node = new_node
 
             if len(key):
