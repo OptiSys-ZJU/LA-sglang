@@ -90,6 +90,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         elif address in self.feature_history:
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], self.access_ts - last_access_time))
+            logger.info(f"features: {str((*self.feature_history[address], self.access_ts - last_access_time))}")
             if len(self.features) > self.training_window:
                 self.features.popleft()
             self.training_accumu_num += 1
@@ -122,12 +123,12 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             this_edc[address] = 1 + this_edc[address] * 2 ** (-delta1 / (2 ** (9 + i)))
 
         # collect training data
-        self.feature_history[address] = [1, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]]
+        self.feature_history[address] = [*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]]
 
     def predict(self, address):
         if address not in self.access_time_dict:
             return 2**62
-        pred = self._model((1, address, *[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
+        pred = self._model((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
     
         # if pred == 0: 
         #     self.belady_value[address] += 1.0
