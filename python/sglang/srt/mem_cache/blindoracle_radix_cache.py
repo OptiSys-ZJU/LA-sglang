@@ -406,9 +406,9 @@ class BlindOracleRadixCache(BasePrefixCache):
         node.last_access_ts = self.access_ts
         node.pred_valid = 0
 
-        if self.access_ts % 100 == 0:
-            captured = self._capture_print()
-            logger.info(f"tree structure: {captured}")
+        #if self.access_ts % 100 == 0:
+        #    captured = self._capture_print()
+        #    logger.info(f"tree structure: {captured}")
 
     def _split_predictor_access(self, node: TreeNode, new_node: TreeNode):
         self.predictor.split_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
@@ -416,6 +416,12 @@ class BlindOracleRadixCache(BasePrefixCache):
         node.last_access_ts = self.access_ts
         new_node.last_access_ts = self.access_ts
         node.pred_valid = 0
+        new_node.pred_valid = 0
+
+    def _predictor_spawn_access(self, node: TreeNode, new_node: TreeNode):
+        self.predictor.spawn_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
+        self.access_ts += 1
+        new_node.last_access_ts = self.access_ts
         new_node.pred_valid = 0
 
     def _insert_helper(self, node: TreeNode, key: List, value):
@@ -447,7 +453,8 @@ class BlindOracleRadixCache(BasePrefixCache):
             new_node.parent = node
             new_node.key = key
             new_node.value = value
-            self._predictor_access(new_node)
+            self._predictor_spawn_access(node, new_node)
+            #self._predictor_access(new_node)
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
             self._record_store_event(new_node)

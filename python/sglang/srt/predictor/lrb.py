@@ -42,7 +42,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         # online training
         self.training_config = model_config['training']
-        self.training_interval = 1000
+        self.training_interval = 2000
         self.training_accumu_num = 0
         self.training_window = 30000
         self.training_data = []
@@ -98,6 +98,14 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             self.deltas[i][new_address] = self.deltas[i][address]
         for i in range(0, self.edc_nums):
             self.edcs[i][new_address] = self.edcs[i][address]
+
+    def spawn_access(self, address, new_address):
+        self.access_time_dict[new_address] = copy.deepcopy(self.access_time_dict[address])
+        for i in range(0, self.delta_nums):
+            self.deltas[i][new_address] = self.deltas[i][address]
+        for i in range(0, self.edc_nums):
+            self.edcs[i][new_address] = self.edcs[i][address]
+        self.access(new_address)
 
     def access(self, address):
         self.access_ts += 1
