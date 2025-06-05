@@ -402,6 +402,9 @@ class BlindOracleRadixCache(BasePrefixCache):
         node.last_access_ts = self.access_ts
         node.pred_valid = 0
 
+        if self.access_ts % 100 == 0:
+            self.pretty_print()
+
     def _split_predictor_access(self, node: TreeNode, new_node: TreeNode):
         self.predictor.split_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
         self.access_ts += 1
