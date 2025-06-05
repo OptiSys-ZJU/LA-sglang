@@ -85,7 +85,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         model.save_model(self._model_save_path)
         end = time.time()
         self.features = collections.deque()
-        logger.info(f"current_access_ts = {self.access_ts}, training time cost = {end - start}, training interval = {self.training_interval}")
+        logger.info(f"current_access_ts = {self.access_ts}, training time cost = {end - start}, #features = {len(self.features)}, interval = {self.training_interval}")
         
         self._model = LightGBMModel.from_config(self.delta_nums, self.edc_nums, self._model_save_path)
         self.existing_online_training = 0
