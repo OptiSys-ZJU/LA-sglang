@@ -91,19 +91,22 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
     def split_access(self, address, new_address):
         self.access(address)
+        # copy features from node with key = address
         self.access_time_dict[new_address] = copy.deepcopy(self.access_time_dict[address])
         for i in range(0, self.delta_nums):
             self.deltas[i][new_address] = self.deltas[i][address]
         for i in range(0, self.edc_nums):
             self.edcs[i][new_address] = self.edcs[i][address]
+        self.feature_history[new_address] = [*[self.deltas[i][new_address] for i in range(self.delta_nums)], *[self.edcs[i][new_address] for i in range(self.edc_nums)]]
 
     def spawn_access(self, address, new_address):
-        logger.info(f"spwan access !!!")
+        # copy features from parent node
         self.access_time_dict[new_address] = copy.deepcopy(self.access_time_dict[address])
         for i in range(0, self.delta_nums):
             self.deltas[i][new_address] = self.deltas[i][address]
         for i in range(0, self.edc_nums):
             self.edcs[i][new_address] = self.edcs[i][address]
+        self.feature_history[new_address] = [*[self.deltas[i][new_address] for i in range(self.delta_nums)], *[self.edcs[i][new_address] for i in range(self.edc_nums)]]
         self.access(new_address, add_feature=1)
 
     def access(self, address, add_feature = 0):
@@ -114,7 +117,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         elif (address in self.feature_history) and (self.enable_online_training == 1) and (add_feature == 1):
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], self.access_ts - last_access_time))
-            logger.warning(f"features: {str((*self.feature_history[address], self.access_ts - last_access_time))}")
+            logger.info(f"features: {str((*self.feature_history[address], self.access_ts - last_access_time))}")
             if len(self.features) > self.training_window:
                 self.features.popleft()
             self.training_accumu_num += 1
@@ -124,6 +127,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
                 #logger.info(f"current features num: {len(self.features)}, time: {time.time()}")
                 asyncio.run(self._online_training())
 
+        # ------------------- update features begins ----------------------------
         this_access_list = self.access_time_dict[address]
         if len(this_access_list) == self.delta_nums + 1:
             this_access_list.popleft()
@@ -146,8 +150,9 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
                 this_edc[address] = 0
             this_edc[address] = 1 + this_edc[address] * 2 ** (-delta1 / (2 ** (9 + i)))
 
-        # collect training data
+        # update feature history right after features updated
         self.feature_history[address] = [*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]]
+        # ------------------- update features ends ----------------------------
 
     def predict(self, address):
         if address not in self.access_time_dict:
