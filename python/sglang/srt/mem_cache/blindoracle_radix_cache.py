@@ -58,7 +58,7 @@ class TreeNode:
         self.key = None
         self.value = None
         self.lock_ref = 0
-        self.last_access_ts = 0
+        self.last_access_ts = time.monotonic()
         self.pred = 0
         self.pred_valid = 0
 
@@ -122,7 +122,6 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.disable = disable
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
-        self.access_ts = 0
         #self.predictor = POPUPredictor()
         #self.predictor = PLECOPredictor()
         self.predictor = LRBReuseDistancePredictor()
@@ -402,26 +401,23 @@ class BlindOracleRadixCache(BasePrefixCache):
     
     def _predictor_access(self, node: TreeNode):
         self.predictor.access(hash(tuple(node.key)))
-        self.access_ts += 1
-        node.last_access_ts = self.access_ts
+        node.last_access_ts = time.monotonic()
         node.pred_valid = 0
 
         #if self.access_ts % 100 == 0:
         #    captured = self._capture_print()
         #    logger.info(f"tree structure: {captured}")
 
-    def _split_predictor_access(self, node: TreeNode, new_node: TreeNode):
-        self.predictor.split_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
-        self.access_ts += 1
-        node.last_access_ts = self.access_ts
-        new_node.last_access_ts = self.access_ts
+    def _split_predictor_access(self, original_key, node: TreeNode, new_node: TreeNode):
+        self.predictor.split_access(hash(tuple(original_key)), hash(tuple(node.key)), hash(tuple(new_node.key)))
+        node.last_access_ts = time.monotonic()
+        new_node.last_access_ts = time.monotonic()
         node.pred_valid = 0
         new_node.pred_valid = 0
 
     def _predictor_spawn_access(self, node: TreeNode, new_node: TreeNode):
         self.predictor.spawn_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
-        self.access_ts += 1
-        new_node.last_access_ts = self.access_ts
+        new_node.last_access_ts = time.monotonic()
         new_node.pred_valid = 0
 
     def _insert_helper(self, node: TreeNode, key: List, value):
@@ -441,8 +437,9 @@ class BlindOracleRadixCache(BasePrefixCache):
             value = value[prefix_len:]
 
             if prefix_len < len(node.key):
+                original_key = node.key
                 new_node = self._split_node(node.key, node, prefix_len)
-                self._split_predictor_access(node, new_node)
+                self._split_predictor_access(original_key, node, new_node)
                 node = new_node
 
             if len(key):

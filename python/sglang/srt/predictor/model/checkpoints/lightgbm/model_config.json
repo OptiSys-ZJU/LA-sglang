@@ -3,7 +3,7 @@
     "edc_nums": 10,
     "training": {
         "objective": "regression",
-        "metric": "l1",
+        "metric": "l2",
         "boosting_type": "gbdt",
         "num_leaves": 64,
         "max_depth": -1,

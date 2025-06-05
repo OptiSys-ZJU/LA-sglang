@@ -53,7 +53,6 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.deltas = [{} for _ in range(self.delta_nums)]
         self.edcs = [{} for _ in range(self.edc_nums)]
         self.access_time_dict = {}
-        self.access_ts = 0
         
         self.belady_value = collections.defaultdict(float)  
 
@@ -83,21 +82,27 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         model = await asyncio.to_thread(self._training_task)
         model.save_model(self._model_save_path)
         end = time.time()
-        logger.info(f"current_access_ts = {self.access_ts}, training time cost = {end - start}, #features = {len(self.features)}, interval = {self.training_interval}")
+        logger.info(f"training time cost = {end - start}, #features = {len(self.features)}, interval = {self.training_interval}")
         
         self._model = LightGBMModel.from_config(self.delta_nums, self.edc_nums, self._model_save_path)
         self.existing_online_training = 0
         self.trained = 1
 
-    def split_access(self, address, new_address):
-        self.access(address)
+    def split_access(self, original_address, child_addr, parent_addr):
+        self.access(original_address)
         # copy features from node with key = address
-        self.access_time_dict[new_address] = copy.deepcopy(self.access_time_dict[address])
+        self.access_time_dict[child_addr] = copy.deepcopy(self.access_time_dict[original_address])
+        self.access_time_dict[parent_addr] = copy.deepcopy(self.access_time_dict[original_address])
         for i in range(0, self.delta_nums):
-            self.deltas[i][new_address] = self.deltas[i][address]
+            self.deltas[i][child_addr] = self.deltas[i][original_address]
+            self.deltas[i][parent_addr] = self.deltas[i][original_address]
         for i in range(0, self.edc_nums):
-            self.edcs[i][new_address] = self.edcs[i][address]
-        self.feature_history[new_address] = [*[self.deltas[i][new_address] for i in range(self.delta_nums)], *[self.edcs[i][new_address] for i in range(self.edc_nums)]]
+            self.edcs[i][child_addr] = self.edcs[i][original_address]
+            self.edcs[i][parent_addr] = self.edcs[i][original_address]
+        
+        self.feature_history[original_address] = None
+        self.feature_history[child_addr] = [*[self.deltas[i][child_addr] for i in range(self.delta_nums)], *[self.edcs[i][child_addr] for i in range(self.edc_nums)]]
+        self.feature_history[parent_addr] = [*[self.deltas[i][parent_addr] for i in range(self.delta_nums)], *[self.edcs[i][parent_addr] for i in range(self.edc_nums)]]
 
     def spawn_access(self, address, new_address):
         # copy features from parent node
@@ -110,14 +115,14 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         #self.access(new_address)
 
     def access(self, address):
-        self.access_ts += 1
+        current_time = time.monotonic()
 
         if address not in self.access_time_dict:
             self.access_time_dict[address] = collections.deque()
         elif (address in self.feature_history) and (self.enable_online_training == 1):
             last_access_time = self.access_time_dict[address][-1]
-            self.features.append((*self.feature_history[address], self.access_ts - last_access_time))
-            logger.info(f"features: {str((*self.feature_history[address], self.access_ts - last_access_time))}")
+            self.features.append((*self.feature_history[address], current_time - last_access_time))
+            logger.info(f"features: {str((*self.feature_history[address], current_time - last_access_time))}")
             if len(self.features) > self.training_window:
                 self.features.popleft()
             self.training_accumu_num += 1
@@ -131,9 +136,9 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         this_access_list = self.access_time_dict[address]
         if len(this_access_list) == self.delta_nums + 1:
             this_access_list.popleft()
-            this_access_list.append(self.access_ts)
+            this_access_list.append(current_time)
         else:
-            this_access_list.append(self.access_ts)
+            this_access_list.append(current_time)
 
         for i in range(1, self.delta_nums + 1):
             this_delta = self.deltas[i-1]
@@ -160,26 +165,6 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         pred = self._model((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
         pred = np.expm1(pred)
         #logger.info(f"pred = {str(pred)}, features: {str((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))}")
-        # if pred == 0: 
-        #     self.belady_value[address] += 1.0
-        # else:  
-        #     self.belady_value[address] = max(0, self.belady_value[address] - 0.1)
-            
-        # if self.access_ts % 1000 == 0:
-        #     to_delete = []
-        #     for key in self.belady_value:
-        #         if key not in self.access_time_dict or (self.access_ts - self.access_time_dict[key][-1]) > self.memory_window:
-        #             to_delete.append(key)
-        #     for key in to_delete:
-        #         del self.belady_value[key]
-        #         if key in self.access_time_dict:
-        #             del self.access_time_dict[key]
-        #         for i in range(self.delta_nums):
-        #             if key in self.deltas[i]:
-        #                 del self.deltas[i][key]
-        #         for i in range(self.edc_nums):
-        #             if key in self.edcs[i]:
-        #                 del self.edcs[i][key]
         return pred
 
 
