@@ -455,10 +455,10 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.token_to_kv_pool_allocator.evictable_size = self.evictable_size_
         return total_prefix_length
     
-    def _capture_print(self, func, *args, **kwargs):
+    def _capture_print(self, func, *args):
         buffer = io.StringIO()
         sys.stdout = buffer
-        func(*args, **kwargs)
+        func(*args)
         sys.stdout = sys.__stdout__
         return buffer.getvalue()
 
