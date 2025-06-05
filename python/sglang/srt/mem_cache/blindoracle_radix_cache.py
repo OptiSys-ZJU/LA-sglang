@@ -407,7 +407,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         node.pred_valid = 0
 
         if self.access_ts % 100 == 0:
-            captured = self._capture_print(self.pretty_print())
+            captured = self._capture_print()
             logger.info(f"tree structure: {captured}")
 
     def _split_predictor_access(self, node: TreeNode, new_node: TreeNode):
@@ -455,10 +455,10 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.token_to_kv_pool_allocator.evictable_size = self.evictable_size_
         return total_prefix_length
     
-    def _capture_print(self, func, *args):
+    def _capture_print(self):
         buffer = io.StringIO()
         sys.stdout = buffer
-        func(*args)
+        self.pretty_print()
         sys.stdout = sys.__stdout__
         return buffer.getvalue()
 
