@@ -98,6 +98,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             self.edcs[i][new_address] = self.edcs[i][address]
 
     def spawn_access(self, address, new_address):
+        logger.info(f"spwan access !!!")
         self.access_time_dict[new_address] = copy.deepcopy(self.access_time_dict[address])
         for i in range(0, self.delta_nums):
             self.deltas[i][new_address] = self.deltas[i][address]
