@@ -1,6 +1,7 @@
 from sglang.srt.predictor.model.models import LightGBMModel
 from sglang.srt.predictor.base_predictor import BinaryPredictor
 from sglang.srt.predictor.base_predictor import ReuseDistancePredictor
+from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
 import numpy as np
@@ -62,8 +63,10 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         labels = [t[-1] for t in self.features]
         X = np.array(train_data)
         y = np.array(labels)
-        train_dataset = lgb.Dataset(X, label=y)
-        return lgb.train(self.training_config, train_dataset)
+        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+        train_dataset = lgb.Dataset(X_train, label=y_train)
+        valid_dataset = lgb.Dataset(X_val, label=y_val)
+        return lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset], early_stopping_rounds=50, verbose_eval=20)
 
     async def _online_training(self):
         if self.existing_online_training == 1:
