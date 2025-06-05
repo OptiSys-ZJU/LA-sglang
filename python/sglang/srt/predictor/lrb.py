@@ -112,7 +112,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         if address not in self.access_time_dict:
             self.access_time_dict[address] = collections.deque()
-        elif address in self.feature_history and self.enable_online_training == 1:
+        elif (address in self.feature_history) and (self.enable_online_training == 1):
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], self.access_ts - last_access_time))
             #logger.info(f"features: {str((*self.feature_history[address], self.access_ts - last_access_time))}")
