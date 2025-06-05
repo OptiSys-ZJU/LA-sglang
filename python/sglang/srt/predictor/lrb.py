@@ -129,7 +129,8 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         if address not in self.access_time_dict:
             return 2**62
         pred = self._model((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
-    
+        
+        logger.info(f"pred = {str(pred)}, features: {str((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))}")
         # if pred == 0: 
         #     self.belady_value[address] += 1.0
         # else:  
