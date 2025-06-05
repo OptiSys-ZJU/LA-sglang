@@ -3,8 +3,10 @@ import asyncio
 import json
 import queue
 import random
+import pickle
 import threading
 import time
+import os
 from datetime import datetime
 from typing import Optional
 
@@ -231,15 +233,23 @@ class WorkloadGenerator:
         self.sent_requests = 0
         self.completed_requests = 0
 
-        self.candidate_inputs = sample_random_requests(
-            input_len=args.request_length,
-            output_len=args.output_length,
-            num_prompts=args.num_clients * args.num_rounds,
-            range_ratio=1.0,
-            tokenizer=self.tokenizer,
-            dataset_path=args.dataset_path,
-        )
-        self.candidate_inputs = [i.prompt for i in self.candidate_inputs]
+        if os.path.exists("candidate_inputs.pkl"):
+             with open('candidate_inputs.pkl', 'rb') as f:
+                self.candidate_inputs = pickle.load(f)
+
+        else:
+            self.candidate_inputs = sample_random_requests(
+                input_len=args.request_length,
+                output_len=args.output_length,
+                num_prompts=args.num_clients * args.num_rounds,
+                range_ratio=1.0,
+                tokenizer=self.tokenizer,
+                dataset_path=args.dataset_path,
+            )
+            self.candidate_inputs = [i.prompt for i in self.candidate_inputs]
+
+            with open('candidate_inputs.pkl', 'wb') as f:
+                pickle.dump(self.candidate_inputs, f)
 
         init_requests = [
             (i, gen_payload(self.candidate_inputs[i], args.output_length))
