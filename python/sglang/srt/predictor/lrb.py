@@ -44,7 +44,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.training_config = model_config['training']
         self.training_interval = 1000
         self.training_accumu_num = 0
-        self.training_window = 10000
+        self.training_window = 30000
         self.training_data = []
         self.existing_online_training = 0
         self.feature_history = {}
@@ -66,8 +66,11 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
         train_dataset = lgb.Dataset(X_train, label=np.log1p(y_train))
         valid_dataset = lgb.Dataset(X_val, label=np.log1p(y_val))
-        return lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset],
+        evals_result = {}  
+        model = lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset], evals_result=evals_result,
                          callbacks=[lgb.early_stopping(stopping_rounds=50), lgb.log_evaluation(period=20)])
+        logger.info(f"eval results: {evals_result["val"]["rmse"]}")
+        return model
 
     async def _online_training(self):
         if self.existing_online_training == 1:
