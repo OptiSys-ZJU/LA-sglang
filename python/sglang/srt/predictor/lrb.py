@@ -107,14 +107,14 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         for i in range(0, self.edc_nums):
             self.edcs[i][new_address] = self.edcs[i][address]
         self.feature_history[new_address] = [*[self.deltas[i][new_address] for i in range(self.delta_nums)], *[self.edcs[i][new_address] for i in range(self.edc_nums)]]
-        self.access(new_address, add_feature=1)
+        #self.access(new_address)
 
-    def access(self, address, add_feature = 0):
+    def access(self, address):
         self.access_ts += 1
 
         if address not in self.access_time_dict:
             self.access_time_dict[address] = collections.deque()
-        elif (address in self.feature_history) and (self.enable_online_training == 1) and (add_feature == 1):
+        elif (address in self.feature_history) and (self.enable_online_training == 1):
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], self.access_ts - last_access_time))
             logger.info(f"features: {str((*self.feature_history[address], self.access_ts - last_access_time))}")
