@@ -66,7 +66,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
         train_dataset = lgb.Dataset(X_train, label=y_train)
         valid_dataset = lgb.Dataset(X_val, label=y_val)
-        return lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset], early_stopping_rounds=50, verbose_eval=20)
+        return lgb.train(self.training_config, train_dataset, valid_sets=[valid_dataset], callbacks=[lgb.early_stopping(stopping_rounds=50)], verbose_eval=20)
 
     async def _online_training(self):
         if self.existing_online_training == 1:
