@@ -113,7 +113,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         elif (address in self.feature_history) and (self.enable_online_training == 1) and (add_feature == 1):
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], self.access_ts - last_access_time))
-            logger.info(f"features: {str((*self.feature_history[address], self.access_ts - last_access_time))}")
+            logger.warning(f"features: {str((*self.feature_history[address], self.access_ts - last_access_time))}")
             if len(self.features) > self.training_window:
                 self.features.popleft()
             self.training_accumu_num += 1
