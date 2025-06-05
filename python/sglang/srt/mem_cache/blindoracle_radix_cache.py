@@ -300,8 +300,6 @@ class BlindOracleRadixCache(BasePrefixCache):
                 break
             if x.lock_ref > 0:
                 continue
-
-            self.token_to_kv_pool_allocator.free(x.value)
             
             if num_evicted + len(x.value) > num_tokens:
                 num_to_evict = num_tokens - num_evicted
@@ -310,6 +308,7 @@ class BlindOracleRadixCache(BasePrefixCache):
                 self._split_predictor_copy(original_key, x, new_node)
 
             num_evicted += len(x.value)
+            self.token_to_kv_pool_allocator.free(x.value)
             self._delete_leaf(x)
 
             if len(x.parent.children) == 0:
