@@ -20,7 +20,10 @@ The radix tree data structure for managing the KV cache.
 """
 
 import heapq
+import io
+import sys
 import time
+import logging
 from collections import defaultdict
 from functools import partial
 from typing import TYPE_CHECKING, List, Optional, Tuple
@@ -43,6 +46,7 @@ from sglang.srt.predictor.lrb import LRBReuseDistancePredictor
 if TYPE_CHECKING:
     from sglang.srt.managers.schedule_batch import Req
 
+logger = logging.getLogger(__name__)
 
 class TreeNode:
 
@@ -403,7 +407,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         node.pred_valid = 0
 
         if self.access_ts % 100 == 0:
-            self.pretty_print()
+            captured = self.capture_print(self.pretty_print())
+            logger.info(f"tree structure: {captured}")
 
     def _split_predictor_access(self, node: TreeNode, new_node: TreeNode):
         self.predictor.split_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
@@ -449,6 +454,13 @@ class BlindOracleRadixCache(BasePrefixCache):
 
         self.token_to_kv_pool_allocator.evictable_size = self.evictable_size_
         return total_prefix_length
+    
+    def capture_print(func, *args, **kwargs):
+        buffer = io.StringIO()
+        sys.stdout = buffer
+        func(*args, **kwargs)
+        sys.stdout = sys.__stdout__
+        return buffer.getvalue()
 
     def _print_helper(self, node: TreeNode, indent: int):
         """Prints the radix tree in a human-readable format."""
