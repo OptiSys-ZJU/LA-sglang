@@ -280,10 +280,6 @@ class WorkloadGenerator:
             if self.pbar.n == self.pbar.total:
                 self.finished_time = time.perf_counter()
             self.response_queue.put((client_id, response))
-            print(f"get client_id = {client_id}")
-            if client_id not in request_rate_map:
-                request_rate_map[client_id] = random.choice(request_rate_list)
-                print(f"set client_id = {request_rate_map[client_id]}")
         except Exception as e:
             print(f"Request failed: {e}")
 
@@ -293,11 +289,12 @@ class WorkloadGenerator:
                 current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
                     new_request = self.ready_queue.pop()
-                    print(f"request = {str(new_request)}")
+                    current_client_id, _ = new_request
+                    if current_client_id not in request_rate_map:
+                        request_rate_map[current_client_id] = random.choice(request_rate_list)
                     if new_request:
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
-                        current_client_id, _ = new_request
                 else:
                     await asyncio.sleep(0.05)
                     continue
