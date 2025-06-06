@@ -72,7 +72,7 @@ class TreeNode:
 
         self.id = config["node_counter"] if id is None else id
         config["node_counter"] += 1
-        logger.info(f"create new node counter: {config["node_counter"]}")
+        logger.info(f"create new node counter: {config['node_counter']}")
 
     @property
     def evicted(self):
