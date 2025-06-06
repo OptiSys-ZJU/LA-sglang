@@ -68,6 +68,7 @@ class TreeNode:
         # store the host indices of KV cache
         self.host_value = None
 
+        global node_counter
         self.id = node_counter if id is None else id
         node_counter += 1
 
