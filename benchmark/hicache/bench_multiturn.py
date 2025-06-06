@@ -300,6 +300,7 @@ class WorkloadGenerator:
                             request_rate_map[current_client_id] = random.choice(request_rate_list)
                             client_id_to_idx[current_client_id] = idx
                             idx_to_client_id[idx] = current_client_id
+                            print(f"register, idx = {idx}, client_id = {current_client_id}")
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
                 else:
