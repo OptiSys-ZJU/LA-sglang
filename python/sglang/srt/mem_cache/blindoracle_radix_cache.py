@@ -416,8 +416,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         node.pred_valid = 0
 
         #if self.access_ts % 100 == 0:
-        #captured = self._capture_print()
-        #logger.info(f"tree structure: {captured}")
+        captured = self._capture_print()
+        logger.info(f"---------------------------------------------------- tree structure: {captured}")
 
     def _split_predictor_copy(self, original_key, node: TreeNode, new_node: TreeNode):
         self.predictor.split_copy(hash(tuple(original_key)), hash(tuple(node.key)), hash(tuple(new_node.key)))
