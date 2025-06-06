@@ -302,7 +302,7 @@ class WorkloadGenerator:
                 if self.pbar.n == self.pbar.total:
                     break
 
-                print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}")
+                #print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}")
                 # Calculate Poisson-distributed wait time
                 if self.distribution == "poisson":
                     sleep_time = random.expovariate(request_rate_map[current_client_id])
