@@ -270,7 +270,7 @@ class WorkloadGenerator:
         }
         self.ready_queue = []
         for i in range(self.num_clients):
-            self.ready_queue.append(ReadyQueue(init_requests=init_requests[args.num_rounds * i: args.num_rounds * (i+1)]))
+            self.ready_queue.append(ReadyQueue(init_requests=init_requests[i: i+1]))
         self.candidate_inputs = self.candidate_inputs[args.num_clients :]
 
         self.response_queue = queue.Queue()
