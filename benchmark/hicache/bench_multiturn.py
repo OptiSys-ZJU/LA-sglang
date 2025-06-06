@@ -5,6 +5,7 @@ import queue
 import random
 import pickle
 import threading
+import random
 import time
 import os
 from datetime import datetime
@@ -21,6 +22,8 @@ from sglang.bench_serving import (
     sample_random_requests,
 )
 
+request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+request_rate_map = {}
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -226,7 +229,6 @@ class WorkloadGenerator:
 
         self.tokenizer = get_tokenizer(args.model_path)
         self.distribution = args.distribution
-        self.request_rate = args.request_rate
         self.start_time = None
         self.finished_time = None
 
@@ -280,15 +282,19 @@ class WorkloadGenerator:
             self.response_queue.put((client_id, response))
         except Exception as e:
             print(f"Request failed: {e}")
+        if client_id not in request_rate_map:
+            request_rate_map[client_id] = random.choice(request_rate_list)
 
     def request_sender(self):
         async def request_loop():
             while True:
+                current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
                     new_request = self.ready_queue.pop()
                     if new_request:
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
+                        current_client_id, _ = new_request
                 else:
                     await asyncio.sleep(0.05)
                     continue
@@ -296,12 +302,13 @@ class WorkloadGenerator:
                 if self.pbar.n == self.pbar.total:
                     break
 
+                print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}")
                 # Calculate Poisson-distributed wait time
                 if self.distribution == "poisson":
-                    sleep_time = random.expovariate(self.request_rate)
+                    sleep_time = random.expovariate(request_rate_map[current_client_id])
                 elif self.distribution == "uniform":
                     avg_interval = (
-                        1.0 / self.request_rate if self.request_rate > 0 else 1.0
+                        1.0 / request_rate_map[current_client_id] if request_rate_map[current_client_id]> 0 else 1.0
                     )
                     sleep_time = random.uniform(0, 2 * avg_interval)
                 else:
@@ -360,7 +367,6 @@ class WorkloadGenerator:
         performance_data = {
             "summary": {
                 "total_requests": len(self.performance_metrics["ttft"]),
-                "request_rate": self.request_rate,
                 "average_ttft": sum(self.performance_metrics["ttft"])
                 / len(self.performance_metrics["ttft"]),
                 "p90_ttft": sorted(self.performance_metrics["ttft"])[
@@ -383,7 +389,7 @@ class WorkloadGenerator:
         print("All requests completed")
         print("Performance metrics summary:")
         print(
-            f"  Total requests: {performance_data['summary']['total_requests']} at {performance_data['summary']['request_rate']} requests per second"
+            f"  Total requests: {performance_data['summary']['total_requests']}"
         )
         print(f"  Average TTFT: {performance_data['summary']['average_ttft']:.2f}")
         print(f"  P90 TTFT: {performance_data['summary']['p90_ttft']:.2f}")
@@ -404,8 +410,8 @@ if __name__ == "__main__":
     flush_cache_url = f"http://{args.host}:{args.port}/flush_cache"
 
     #for request_rate in [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:
-    for request_rate in [16]:
-        args.request_rate = request_rate
-        requests.post(flush_cache_url)
-        time.sleep(1)
-        WorkloadGenerator(args).run()
+    #for request_rate in [16]:
+    #    args.request_rate = request_rate
+    requests.post(flush_cache_url)
+    time.sleep(1)
+    WorkloadGenerator(args).run()
