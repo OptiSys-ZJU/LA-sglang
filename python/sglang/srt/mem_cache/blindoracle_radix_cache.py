@@ -48,9 +48,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class TreeNode:
+node_counter = 0
 
-    counter = 0
+class TreeNode:
 
     def __init__(self, id: Optional[int] = None):
         self.children = defaultdict(TreeNode)
@@ -68,8 +68,8 @@ class TreeNode:
         # store the host indices of KV cache
         self.host_value = None
 
-        self.id = TreeNode.counter if id is None else id
-        TreeNode.counter += 1
+        self.id = node_counter if id is None else id
+        node_counter += 1
 
     @property
     def evicted(self):
