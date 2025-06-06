@@ -485,10 +485,10 @@ class BlindOracleRadixCache(BasePrefixCache):
             current_node, current_indent = stack.pop()
             print(
                 " " * current_indent,
-                len(current_node.key),
-                f", id({current_node.id}) ",
-                current_node.key[:10],
-                f"r={current_node.lock_ref}",
+                f"id({current_node.id}) ",
+                #len(current_node.key),
+                #current_node.key[:10],
+                #f"r={current_node.lock_ref}",
             )
             for key, child in current_node.children.items():
                 stack.append((child, current_indent + 2))
