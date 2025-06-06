@@ -247,6 +247,9 @@ class WorkloadGenerator:
                 dataset_path=args.dataset_path,
             )
             self.candidate_inputs = [i.prompt for i in self.candidate_inputs]
+            for i in self.candidate_inputs:
+                print(f"len = {len(i.prompt)}, prompt: {i.prompt}")
+                break
 
             with open('candidate_inputs.pkl', 'wb') as f:
                 pickle.dump(self.candidate_inputs, f)
