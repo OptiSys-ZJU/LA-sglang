@@ -484,7 +484,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         while stack:
             current_node, current_indent = stack.pop()
             print(
-                " " * current_indent,
+                "-" * current_indent,
                 f"id({current_node.id}) ",
                 #len(current_node.key),
                 #current_node.key[:10],
