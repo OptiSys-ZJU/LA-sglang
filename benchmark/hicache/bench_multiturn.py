@@ -291,6 +291,7 @@ class WorkloadGenerator:
                 current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
                     new_request = self.ready_queue.pop()
+                    print(f"request = {str(new_request)}")
                     if new_request:
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
