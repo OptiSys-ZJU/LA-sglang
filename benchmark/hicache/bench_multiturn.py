@@ -289,7 +289,7 @@ class WorkloadGenerator:
 
     def request_sender(self):
         async def request_loop(idx):
-            while len(self.ready_queue[idx]) > 0:
+            while len(self.ready_queue[idx].requests) > 0:
                 current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
                     new_request = self.ready_queue[idx].pop()
