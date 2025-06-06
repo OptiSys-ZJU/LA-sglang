@@ -48,7 +48,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-node_counter = 0
+config = {
+    "node_counter": 0
+}
 
 class TreeNode:
 
@@ -68,9 +70,8 @@ class TreeNode:
         # store the host indices of KV cache
         self.host_value = None
 
-        global node_counter
-        self.id = node_counter if id is None else id
-        node_counter += 1
+        self.id = config["node_counter"] if id is None else id
+        config["node_counter"] += 1
 
     @property
     def evicted(self):
