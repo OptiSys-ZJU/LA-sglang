@@ -486,7 +486,7 @@ class BlindOracleRadixCache(BasePrefixCache):
             print(
                 "-" * current_indent,
                 f"id({current_node.id}) ",
-                #len(current_node.key),
+                f"len = {len(current_node.key)}",
                 #current_node.key[:10],
                 #f"r={current_node.lock_ref}",
             )
