@@ -293,11 +293,11 @@ class WorkloadGenerator:
                 current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
                     new_request = self.ready_queue[idx].pop()
-                    current_client_id, _ = new_request
-                    if current_client_id not in request_rate_map:
-                        request_rate_map[current_client_id] = random.choice(request_rate_list)
-                        client_id_to_idx[current_client_id] = idx
                     if new_request:
+                        current_client_id, _ = new_request
+                        if current_client_id not in request_rate_map:
+                            request_rate_map[current_client_id] = random.choice(request_rate_list)
+                            client_id_to_idx[current_client_id] = idx
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
                 else:
