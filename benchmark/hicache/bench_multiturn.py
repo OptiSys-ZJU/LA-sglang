@@ -252,8 +252,8 @@ class WorkloadGenerator:
                 pickle.dump(self.candidate_inputs, f)
 
         for i in self.candidate_inputs:
-                print(f"len = {len(i.prompt)}, prompt: {i.prompt}")
-                break
+            print(f"len = {len(i)}, prompt: {i}")
+            break
 
         init_requests = [
             (i, gen_payload(self.candidate_inputs[i], args.output_length))
