@@ -280,8 +280,10 @@ class WorkloadGenerator:
             if self.pbar.n == self.pbar.total:
                 self.finished_time = time.perf_counter()
             self.response_queue.put((client_id, response))
+            print(f"get client_id = {client_id}")
             if client_id not in request_rate_map:
                 request_rate_map[client_id] = random.choice(request_rate_list)
+                print(f"set client_id = {request_rate_map[client_id]}")
         except Exception as e:
             print(f"Request failed: {e}")
 
