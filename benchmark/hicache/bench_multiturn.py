@@ -25,6 +25,7 @@ from sglang.bench_serving import (
 request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 request_rate_map = {}
 client_id_to_idx = {}
+idx_to_client_id = {}
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -298,6 +299,7 @@ class WorkloadGenerator:
                         if current_client_id not in request_rate_map:
                             request_rate_map[current_client_id] = random.choice(request_rate_list)
                             client_id_to_idx[current_client_id] = idx
+                            idx_to_client_id[idx] = current_client_id
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
                 else:
@@ -307,6 +309,8 @@ class WorkloadGenerator:
                 if self.pbar.n == self.pbar.total:
                    break
 
+                if current_client_id is None:
+                    current_client_id = idx_to_client_id[idx]
                 print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}, corres idx: {idx}")
                 # Calculate Poisson-distributed wait time
                 if self.distribution == "poisson":
