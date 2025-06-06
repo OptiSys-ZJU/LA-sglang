@@ -1203,6 +1203,8 @@ class Scheduler(
 
             self.metrics_collector.log_stats(self.stats)
 
+            logger.info(f"current total cache hit ratio: {self.stats.cache_total_hit_rate}")
+
         self._publish_kv_events()
 
     def log_decode_stats(
