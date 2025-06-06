@@ -251,9 +251,10 @@ class WorkloadGenerator:
             with open('candidate_inputs.pkl', 'wb') as f:
                 pickle.dump(self.candidate_inputs, f)
 
-        for i in self.candidate_inputs:
-            print(f"len = {len(i)}, prompt: {i}")
-            break
+        for i in range(len(self.candidate_inputs)):
+            print(f"len = {len(self.candidate_inputs[i])}, prompt: {self.candidate_inputs[i]}")
+            if i > 10:
+                break
 
         init_requests = [
             (i, gen_payload(self.candidate_inputs[i], args.output_length))
