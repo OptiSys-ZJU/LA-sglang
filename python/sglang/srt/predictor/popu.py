@@ -26,3 +26,24 @@ class POPUPredictor(ReuseDistancePredictor):
     def predict(self, address):
         pred = (time.monotonic() - self.base_time) / self.counts[address]
         return pred
+    
+class LRUPredictor(ReuseDistancePredictor):
+    def __init__(self):
+        super().__init__()
+        self.access_ts = {}
+
+    def split_copy(self, original_address, child_addr, parent_addr):
+        # copy features from node with key = original_address
+        self.access_ts[child_addr] = self.access_ts[original_address]
+        self.access_ts[parent_addr] = self.access_ts[original_address]
+
+    def spawn_access(self, address, new_address):
+        # copy features from parent node
+        self.access_ts[new_address] = self.access_ts[address]
+
+    def access(self, address):
+        self.access_ts[address] = time.monotonic()
+    
+    def predict(self, address):
+        pred = -2 * self.access_ts[address]
+        return pred

@@ -40,7 +40,7 @@ from sglang.srt.managers.schedule_batch import global_server_args_dict
 from sglang.srt.mem_cache.base_prefix_cache import BasePrefixCache
 from sglang.srt.mem_cache.memory_pool import ReqToTokenPool, TokenToKVPoolAllocator
 from sglang.srt.predictor.pleco import PLECOPredictor
-from sglang.srt.predictor.popu import POPUPredictor
+from sglang.srt.predictor.popu import POPUPredictor, LRUPredictor
 from sglang.srt.predictor.lrb import LRBReuseDistancePredictor
 
 if TYPE_CHECKING:
@@ -122,7 +122,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.disable = disable
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
-        self.predictor = POPUPredictor()
+        #self.predictor = POPUPredictor()
+        self.predictor = LRUPredictor()
         #self.predictor = PLECOPredictor()
         #self.predictor = LRBReuseDistancePredictor()
 
