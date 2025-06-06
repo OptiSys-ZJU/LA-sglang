@@ -24,6 +24,7 @@ from sglang.bench_serving import (
 
 request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 request_rate_map = {}
+client_id_to_idx = {}
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -231,6 +232,7 @@ class WorkloadGenerator:
         self.distribution = args.distribution
         self.start_time = None
         self.finished_time = None
+        self.num_clients = args.num_clients
 
         self.sent_requests = 0
         self.completed_requests = 0
@@ -266,7 +268,9 @@ class WorkloadGenerator:
             i: {"round": 0, "history": init_requests[i][1]["text"]}
             for i in range(args.num_clients)
         }
-        self.ready_queue = ReadyQueue(init_requests=init_requests)
+        self.ready_queue = []
+        for i in range(self.num_clients):
+            self.ready_queue.append(ReadyQueue(init_requests=init_requests[args.num_rounds * i: args.num_rounds * (i+1)]))
         self.candidate_inputs = self.candidate_inputs[args.num_clients :]
 
         self.response_queue = queue.Queue()
@@ -284,14 +288,15 @@ class WorkloadGenerator:
             print(f"Request failed: {e}")
 
     def request_sender(self):
-        async def request_loop():
-            while True:
+        async def request_loop(idx):
+            while len(self.ready_queue[idx]) > 0:
                 current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
-                    new_request = self.ready_queue.pop()
+                    new_request = self.ready_queue[idx].pop()
                     current_client_id, _ = new_request
                     if current_client_id not in request_rate_map:
                         request_rate_map[current_client_id] = random.choice(request_rate_list)
+                        client_id_to_idx[current_client_id] = idx
                     if new_request:
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
@@ -299,10 +304,10 @@ class WorkloadGenerator:
                     await asyncio.sleep(0.05)
                     continue
 
-                if self.pbar.n == self.pbar.total:
-                    break
+                #if self.pbar.n == self.pbar.total:
+                #   break
 
-                #print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}")
+                print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}, corres idx: {idx}")
                 # Calculate Poisson-distributed wait time
                 if self.distribution == "poisson":
                     sleep_time = random.expovariate(request_rate_map[current_client_id])
@@ -315,11 +320,19 @@ class WorkloadGenerator:
                     raise ValueError("Invalid distribution type")
                 await asyncio.sleep(sleep_time)  # Wait before sending the next request
 
-        # Create and run the event loop for asynchronous requests
+        async def main():
+            tasks = [asyncio.create_task(request_loop(idx)) for idx in range(self.num_clients)]
+            await asyncio.gather(*tasks)
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(request_loop())
+        loop.run_until_complete(main())
         loop.close()
+        # Create and run the event loop for asynchronous requests
+        #loop = asyncio.new_event_loop()
+        #asyncio.set_event_loop(loop)
+        #loop.run_until_complete(request_loop())
+        #loop.close()
 
     def response_handler(self):
         while True:
@@ -339,7 +352,7 @@ class WorkloadGenerator:
                     self.client_records[client_id][
                         "history"
                     ] += self.candidate_inputs.pop()
-                    self.ready_queue.append(
+                    self.ready_queue[client_id_to_idx[client_id]].append(
                         (
                             client_id,
                             gen_payload(
