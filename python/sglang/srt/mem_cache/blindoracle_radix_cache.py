@@ -48,11 +48,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-config = {
-    "node_counter": 0
-}
-
 class TreeNode:
+
+    counter = 0
 
     def __init__(self, id: Optional[int] = None):
         self.children = defaultdict(TreeNode)
@@ -70,9 +68,8 @@ class TreeNode:
         # store the host indices of KV cache
         self.host_value = None
 
-        self.id = config["node_counter"] if id is None else id
-        config["node_counter"] += 1
-        logger.info(f"create new node counter: {config['node_counter']}")
+        self.id = TreeNode.counter if id is None else id
+        TreeNode.counter += 1
 
     @property
     def evicted(self):
@@ -489,7 +486,7 @@ class BlindOracleRadixCache(BasePrefixCache):
             print(
                 " " * current_indent,
                 len(current_node.key),
-                f", id({node.id}) ",
+                f", id({current_node.id}) ",
                 current_node.key[:10],
                 f"r={current_node.lock_ref}",
             )
