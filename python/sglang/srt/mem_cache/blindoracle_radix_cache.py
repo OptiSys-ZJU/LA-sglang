@@ -123,9 +123,9 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
         #self.predictor = POPUPredictor()
-        #self.predictor = LRUPredictor()
+        self.predictor = LRUPredictor()
         #self.predictor = PLECOPredictor()
-        self.predictor = LRBReuseDistancePredictor()
+        #self.predictor = LRBReuseDistancePredictor()
 
         if self.token_to_kv_pool_allocator:
             self.device = self.token_to_kv_pool_allocator.device
@@ -367,10 +367,12 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def _match_prefix_helper(self, node: TreeNode, key: List):
         child_key = self.get_child_key_fn(key)
+        self._predictor_access(node)
 
         value = []
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
+            self._predictor_access(child)
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
                 original_key = child.key
