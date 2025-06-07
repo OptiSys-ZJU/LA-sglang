@@ -123,9 +123,9 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
         #self.predictor = POPUPredictor()
-        self.predictor = LRUPredictor()
+        #self.predictor = LRUPredictor()
         #self.predictor = PLECOPredictor()
-        #self.predictor = LRBReuseDistancePredictor()
+        self.predictor = LRBReuseDistancePredictor()
 
         if self.token_to_kv_pool_allocator:
             self.device = self.token_to_kv_pool_allocator.device
@@ -485,7 +485,7 @@ class BlindOracleRadixCache(BasePrefixCache):
             current_node, current_indent = stack.pop()
             print(
                 "--" * current_indent,
-                f"node ({current_node.id}), depth ({current_indent / 2}), #keys {len(current_node.key)}",
+                f"node_id ({current_node.id}), depth ({current_indent / 2}), #keys {len(current_node.key)}",
                 #current_node.key[:10],
                 #f"r={current_node.lock_ref}",
             )
