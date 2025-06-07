@@ -5,18 +5,13 @@
         "objective": "regression",
         "metric": "l2",
         "boosting_type": "gbdt",
-        "num_leaves": 64,
-        "max_depth": -1,
-        "num_boost_round": 1000,
+        "num_leaves": 31,
+        "max_depth": 6,
+        "num_boost_round": 5000,
         "learning_rate": 0.01,
-        "feature_fraction": 0.8,
-        "bagging_fraction": 0.8,
-        "bagging_freq": 5,
-        "lambda_l1": 1.0,
-        "lambda_l2": 1.0,
-        "min_data_in_leaf": 20,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
         "verbose": -1,
-        "random_state": 42,
         "num_threads": 1
     }
 }
