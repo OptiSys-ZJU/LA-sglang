@@ -323,6 +323,7 @@ class WorkloadGenerator:
                     sleep_time = random.uniform(0, 2 * avg_interval)
                 else:
                     raise ValueError("Invalid distribution type")
+                print(f"sleep_time: {sleep_time}")
                 await asyncio.sleep(sleep_time)  # Wait before sending the next request
 
         async def main():
