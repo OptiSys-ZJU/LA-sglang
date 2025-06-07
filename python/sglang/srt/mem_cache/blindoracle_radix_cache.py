@@ -58,7 +58,7 @@ class TreeNode:
         self.key = None
         self.value = None
         self.lock_ref = 0
-        self.last_access_ts = time.monotonic()
+        self.last_access_ts = 0 #time.monotonic()
         self.pred = 0
         self.pred_valid = 0
 
@@ -78,9 +78,6 @@ class TreeNode:
     @property
     def backuped(self):
         return self.host_value is not None
-
-    #def __lt__(self, other: "TreeNode"):
-    #    return self.last_access_ts < other.last_access_ts
     
     def __lt__(self, other: "TreeNode"):
         return self.pred > other.pred
@@ -384,18 +381,18 @@ class BlindOracleRadixCache(BasePrefixCache):
     ##### Internal Helper Functions #####
 
     def _match_prefix_helper(self, node: TreeNode, key: List):
-        self._predictor_access(node)
+        #self._predictor_access(node)
 
         child_key = self.get_child_key_fn(key)
         
         value = []
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
-            self._predictor_access(child)
+            #self._predictor_access(child)
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
                 original_key = child.key
-                self._predictor_access(child)
+                #self._predictor_access(child)
                 new_node = self._split_node(child.key, child, prefix_len)
                 self._split_predictor_copy(original_key, child, new_node)
                 value.append(new_node.value)
@@ -434,7 +431,6 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.predictor.access(hash(tuple(node.key)))
         if node.pred_valid == 1:
             logger.info(f"node pred = {node.pred}, truth = {time.monotonic()}, interval = {time.monotonic() - node.last_access_ts}, node key = {hash(tuple(node.key))}")
-        node.last_access_ts = time.monotonic()
         node.pred_valid = 0
 
         #if self.access_ts % 100 == 0:
@@ -443,20 +439,19 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def _split_predictor_copy(self, original_key, node: TreeNode, new_node: TreeNode):
         self.predictor.split_copy(hash(tuple(original_key)), hash(tuple(node.key)), hash(tuple(new_node.key)))
-        node.last_access_ts = time.monotonic()
-        new_node.last_access_ts = time.monotonic()
+        new_node.last_access_ts = node.last_access_ts
         node.pred_valid = 0
         new_node.pred_valid = 0
 
     def _predictor_spawn_access(self, node: TreeNode, new_node: TreeNode):
         self.predictor.spawn_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
-        new_node.last_access_ts = time.monotonic()
         new_node.pred_valid = 0
 
     def _insert_helper(self, node: TreeNode, key: List, value):
         if len(key) == 0:
             return 0
         self._predictor_access(node)
+        node.last_access_ts = time.monotonic()
 
         child_key = self.get_child_key_fn(key)
 
@@ -464,6 +459,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         while len(key) > 0 and child_key in node.children.keys():
             node = node.children[child_key]
             self._predictor_access(node)
+            node.last_access_ts = time.monotonic()
             prefix_len = self.key_match_fn(node.key, key)
             total_prefix_length += prefix_len
             key = key[prefix_len:]
@@ -474,6 +470,7 @@ class BlindOracleRadixCache(BasePrefixCache):
                 self._predictor_access(node)
                 new_node = self._split_node(node.key, node, prefix_len)
                 self._split_predictor_copy(original_key, node, new_node)
+                new_node.last_access_ts = time.monotonic()
                 node = new_node
 
             if len(key):
@@ -485,6 +482,7 @@ class BlindOracleRadixCache(BasePrefixCache):
             new_node.key = key
             new_node.value = value
             self._predictor_spawn_access(node, new_node)
+            new_node.last_access_ts = time.monotonic()
             #self._predictor_access(new_node)
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)

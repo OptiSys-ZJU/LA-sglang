@@ -51,7 +51,7 @@ class TreeNode:
         self.key = None
         self.value = None
         self.lock_ref = 0
-        self.last_access_time = 0 # time.monotonic()
+        self.last_access_time = time.monotonic()
 
         self.hit_count = 0
         # indicating the node is loading KV cache from host
@@ -347,7 +347,6 @@ class RadixCache(BasePrefixCache):
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
                 new_node = self._split_node(child.key, child, prefix_len)
-                new_node.last_access_time = time.monotonic()
                 value.append(new_node.value)
                 node = new_node
                 break
@@ -398,7 +397,6 @@ class RadixCache(BasePrefixCache):
 
             if prefix_len < len(node.key):
                 new_node = self._split_node(node.key, node, prefix_len)
-                new_node.last_access_time = time.monotonic()
                 node = new_node
 
             if len(key):
@@ -409,7 +407,6 @@ class RadixCache(BasePrefixCache):
             new_node.parent = node
             new_node.key = key
             new_node.value = value
-            new_node.last_access_time = time.monotonic()
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
             self._record_store_event(new_node)
