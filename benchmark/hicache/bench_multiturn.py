@@ -21,7 +21,7 @@ from sglang.bench_serving import (
     remove_prefix,
     sample_random_requests,
 )
-zc
+
 #request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 request_rate_list = [0.2, 0.1, 0.05, 0.01, 0.005]
 request_rate_map = {}
