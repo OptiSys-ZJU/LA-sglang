@@ -79,11 +79,11 @@ class TreeNode:
     def backuped(self):
         return self.host_value is not None
 
-    #def __lt__(self, other: "TreeNode"):
-     #   return self.last_access_time < other.last_access_time
-    
     def __lt__(self, other: "TreeNode"):
-        return self.pred > other.pred
+        return self.last_access_time < other.last_access_time
+    
+    #def __lt__(self, other: "TreeNode"):
+     #   return self.pred > other.pred
 
 
 def _key_match_page_size1(key0: List, key1: List):
@@ -384,9 +384,10 @@ class BlindOracleRadixCache(BasePrefixCache):
     ##### Internal Helper Functions #####
 
     def _match_prefix_helper(self, node: TreeNode, key: List):
-        child_key = self.get_child_key_fn(key)
         self._predictor_access(node)
 
+        child_key = self.get_child_key_fn(key)
+        
         value = []
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
