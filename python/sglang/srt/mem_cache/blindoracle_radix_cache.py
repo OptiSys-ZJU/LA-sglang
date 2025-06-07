@@ -119,8 +119,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.disable = disable
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
-        #self.predictor = POPUPredictor()
-        self.predictor = LRUPredictor()
+        self.predictor = POPUPredictor()
+        #self.predictor = LRUPredictor()
         #self.predictor = PLECOPredictor()
         #self.predictor = LRBReuseDistancePredictor()
 
