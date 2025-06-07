@@ -294,6 +294,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         heapq.heapify(leaves)
 
         num_evicted = 0
+
         while num_evicted < num_tokens and len(leaves):
             x = heapq.heappop(leaves)
 
@@ -301,21 +302,38 @@ class BlindOracleRadixCache(BasePrefixCache):
                 break
             if x.lock_ref > 0:
                 continue
-            
-            if num_evicted + len(x.value) > num_tokens:
-                num_to_evict = num_tokens - num_evicted
-                original_key = x.key
-                new_node = self._split_node(x.key, x, len(x.value) - num_to_evict)
-                self._split_predictor_copy(original_key, x, new_node)
 
-            num_evicted += len(x.value)
             self.token_to_kv_pool_allocator.free(x.value)
+            num_evicted += len(x.value)
             self._delete_leaf(x)
 
             if len(x.parent.children) == 0:
                 heapq.heappush(leaves, x.parent)
 
             self._record_remove_event(x)
+
+        # while num_evicted < num_tokens and len(leaves):
+        #     x = heapq.heappop(leaves)
+
+        #     if x == self.root_node:
+        #         break
+        #     if x.lock_ref > 0:
+        #         continue
+            
+        #     if num_evicted + len(x.value) > num_tokens:
+        #         num_to_evict = num_tokens - num_evicted
+        #         original_key = x.key
+        #         new_node = self._split_node(x.key, x, len(x.value) - num_to_evict)
+        #         self._split_predictor_copy(original_key, x, new_node)
+
+        #     num_evicted += len(x.value)
+        #     self.token_to_kv_pool_allocator.free(x.value)
+        #     self._delete_leaf(x)
+
+        #     if len(x.parent.children) == 0:
+        #         heapq.heappush(leaves, x.parent)
+
+        #     self._record_remove_event(x)
 
     def inc_lock_ref(self, node: TreeNode):
         if self.disable:
