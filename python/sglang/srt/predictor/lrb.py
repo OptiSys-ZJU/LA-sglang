@@ -42,13 +42,13 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
         # online training
         self.training_config = model_config['training']
-        self.training_interval = 5000
+        self.training_interval = 3000
         self.training_accumu_num = 0
         self.training_window = 20000
         self.existing_online_training = 0
         self.feature_history = {}
         self.features = collections.deque()
-        self.enable_online_training = 0
+        self.enable_online_training = 1
         
         self.deltas = [{} for _ in range(self.delta_nums)]
         self.edcs = [{} for _ in range(self.edc_nums)]
@@ -125,7 +125,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         elif (address in self.feature_history) and (self.enable_online_training == 1):
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], current_time - last_access_time))
-            #logger.info(f"#features: {len(self.features)}")
+            logger.info(f"#features: {len(self.features)}")
             #logger.info(f"features: {str((*self.feature_history[address], current_time - last_access_time))}")
             if len(self.features) > self.training_window:
                 self.features.popleft()
