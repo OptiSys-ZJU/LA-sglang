@@ -59,8 +59,8 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
     def _training_task(self):
         train_data = [t[:-1] for t in self.features]
         labels = [t[-1] for t in self.features]
-        for i in range(100):
-            logger.info(f"training_data: {train_data[i]}, label: {labels[i]}")
+        #for i in range(100):
+        #    logger.info(f"training_data: {train_data[i]}, label: {labels[i]}")
         X = np.array(train_data)
         y = np.array(labels)
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -125,8 +125,8 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         elif (address in self.feature_history) and (self.enable_online_training == 1):
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], current_time - last_access_time))
-            logger.info(f"#features: {len(self.features)}")
-            logger.info(f"features: {str((*self.feature_history[address], current_time - last_access_time))}")
+            #logger.info(f"#features: {len(self.features)}")
+            #logger.info(f"features: {str((*self.feature_history[address], current_time - last_access_time))}")
             if len(self.features) > self.training_window:
                 self.features.popleft()
             self.training_accumu_num += 1
