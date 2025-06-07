@@ -301,7 +301,7 @@ class WorkloadGenerator:
                             request_rate_map[current_client_id] = request_rate_list[idx % len(request_rate_list)]
                             client_id_to_idx[current_client_id] = idx
                             idx_to_client_id[idx] = current_client_id
-                            print(f"register, idx = {idx}, client_id = {current_client_id}")
+                            #print(f"register, idx = {idx}, client_id = {current_client_id}")
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
                 else:
@@ -313,7 +313,7 @@ class WorkloadGenerator:
 
                 if current_client_id is None:
                     current_client_id = idx_to_client_id[idx]
-                print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}, corres idx: {idx}")
+                #print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}, corres idx: {idx}")
                 # Calculate Poisson-distributed wait time
                 if self.distribution == "poisson":
                     sleep_time = random.expovariate(request_rate_map[current_client_id])
@@ -324,7 +324,7 @@ class WorkloadGenerator:
                     sleep_time = random.uniform(0, 2 * avg_interval)
                 else:
                     raise ValueError("Invalid distribution type")
-                print(f"sleep_time: {sleep_time}")
+                #print(f"sleep_time: {sleep_time}")
                 await asyncio.sleep(sleep_time)  # Wait before sending the next request
 
         async def main():
