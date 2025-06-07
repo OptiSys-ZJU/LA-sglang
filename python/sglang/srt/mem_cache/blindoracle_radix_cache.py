@@ -79,11 +79,11 @@ class TreeNode:
     def backuped(self):
         return self.host_value is not None
 
-    def __lt__(self, other: "TreeNode"):
-        return self.last_access_ts < other.last_access_ts
-    
     #def __lt__(self, other: "TreeNode"):
-     #   return self.pred > other.pred
+    #    return self.last_access_ts < other.last_access_ts
+    
+    def __lt__(self, other: "TreeNode"):
+        return self.pred > other.pred
 
 
 def _key_match_page_size1(key0: List, key1: List):
@@ -123,9 +123,9 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.enable_kv_cache_events = enable_kv_cache_events
         self.kv_event_queue = []
         #self.predictor = POPUPredictor()
-        self.predictor = LRUPredictor()
+        #self.predictor = LRUPredictor()
         #self.predictor = PLECOPredictor()
-        #self.predictor = LRBReuseDistancePredictor()
+        self.predictor = LRBReuseDistancePredictor()
 
         if self.token_to_kv_pool_allocator:
             self.device = self.token_to_kv_pool_allocator.device
