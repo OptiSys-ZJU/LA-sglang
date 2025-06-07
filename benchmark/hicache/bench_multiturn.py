@@ -23,7 +23,7 @@ from sglang.bench_serving import (
 )
 
 #request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-request_rate_list = [1, 0.2, 0.1, 0.05, 0.03, 0.016]
+request_rate_list = [1, 0.5, 0.3, 0.2, 0.1, 0.05]
 request_rate_map = {}
 client_id_to_idx = {}
 idx_to_client_id = {}
@@ -298,7 +298,7 @@ class WorkloadGenerator:
                     if new_request:
                         current_client_id, _ = new_request
                         if current_client_id not in request_rate_map:
-                            request_rate_map[current_client_id] = random.choice(request_rate_list)
+                            request_rate_map[current_client_id] = request_rate_list[idx % len(request_rate_list)]
                             client_id_to_idx[current_client_id] = idx
                             idx_to_client_id[idx] = current_client_id
                             print(f"register, idx = {idx}, client_id = {current_client_id}")
