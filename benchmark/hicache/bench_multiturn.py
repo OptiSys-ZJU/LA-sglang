@@ -22,7 +22,8 @@ from sglang.bench_serving import (
     sample_random_requests,
 )
 
-request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+#request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+request_rate_list = [16, 8, 4, 1, 0.25, 0.0625, 0.016]
 request_rate_map = {}
 client_id_to_idx = {}
 idx_to_client_id = {}
