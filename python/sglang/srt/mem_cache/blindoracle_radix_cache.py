@@ -451,6 +451,7 @@ class BlindOracleRadixCache(BasePrefixCache):
     def _insert_helper(self, node: TreeNode, key: List, value):
         if len(key) == 0:
             return 0
+        logger.info(f"insert keys: {str(key)}")
         self._predictor_access(node)
         #logger.info(f"insert : {str(key)}")
         node.last_access_ts = time.monotonic()
