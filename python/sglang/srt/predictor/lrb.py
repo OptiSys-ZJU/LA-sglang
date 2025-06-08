@@ -102,12 +102,13 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
 
     def feature_copy(self, address, new_address):
         # copy features from original address
-        self.access_time_dict[new_address] = copy.deepcopy(self.access_time_dict[address])
-        for i in range(0, self.delta_nums):
-            self.deltas[i][new_address] = self.deltas[i][address]
-        for i in range(0, self.edc_nums):
-            self.edcs[i][new_address] = self.edcs[i][address]
-        self.feature_history[new_address] = [*[self.deltas[i][new_address] for i in range(self.delta_nums)], *[self.edcs[i][new_address] for i in range(self.edc_nums)]]
+        if address in self.access_time_dict:
+            self.access_time_dict[new_address] = copy.deepcopy(self.access_time_dict[address])
+            for i in range(0, self.delta_nums):
+                self.deltas[i][new_address] = self.deltas[i][address]
+            for i in range(0, self.edc_nums):
+                self.edcs[i][new_address] = self.edcs[i][address]
+            self.feature_history[new_address] = [*[self.deltas[i][new_address] for i in range(self.delta_nums)], *[self.edcs[i][new_address] for i in range(self.edc_nums)]]
 
     def access(self, address, current_ts):
 
