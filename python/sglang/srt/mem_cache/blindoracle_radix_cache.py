@@ -191,6 +191,7 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def cache_finished_req(self, req: Req):
         """Cache request when it finishes."""
+        logger.info(f"cached finished req !!!!!!!!!!!!!!!!!")
         if self.disable:
             kv_indices = self.req_to_token_pool.req_to_token[
                 req.req_pool_idx, : len(req.origin_input_ids) + len(req.output_ids) - 1
@@ -226,6 +227,7 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def cache_unfinished_req(self, req: Req):
         """Cache request when it is unfinished."""
+        logger.info(f"cached UN finished req !!!!!!!!!!!!!!!!!")
         if self.disable:
             return
 
