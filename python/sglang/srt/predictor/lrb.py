@@ -113,7 +113,9 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
     def access(self, address, current_ts):
         if address not in self.access_time_dict:
             self.access_time_dict[address] = collections.deque()
-        elif (address in self.feature_history) and (self.enable_online_training == 1):
+        elif (self.enable_online_training == 1) \
+            and (address in self.feature_history) \
+            and (self.feature_history[0] != np.inf):
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], current_ts - last_access_time))
             logger.info(f"#features: {len(self.features)}")
@@ -151,8 +153,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             this_edc[address] = 1 + this_edc[address] * 2 ** (-delta1 / (2 ** (9 + i)))
 
         # update feature history right after features updated
-        if self.deltas[0][address] != np.inf:
-            self.feature_history[address] = [*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]]
+        self.feature_history[address] = [*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]]
         # ------------------- update features ends ----------------------------
 
     def predict(self, address):
