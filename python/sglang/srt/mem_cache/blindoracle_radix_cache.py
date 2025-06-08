@@ -431,9 +431,9 @@ class BlindOracleRadixCache(BasePrefixCache):
 
         return new_node
     
-    def _predictor_access(self, node: TreeNode):
+    def _predictor_access(self, node: TreeNode, current_ts):
         logger.info(f"pred access key = {hash(tuple(node.key))}")
-        self.predictor.access(hash(tuple(node.key)))
+        self.predictor.access(hash(tuple(node.key)), current_ts)
         if node.pred_valid == 1:
             logger.info(f"node pred = {node.pred}, truth = {self.current_ts}, interval = {self.current_ts - node.last_access_ts}, node key = {hash(tuple(node.key))}")
         node.pred_valid = 0
@@ -466,7 +466,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         logger.info(f"insert keys: {str(key)}")
         # update ts and features only when the request is finished
         if finished_req == True:
-            self._predictor_access(node)
+            self._predictor_access(node, self.current_ts)
             node.last_access_ts = self.current_ts
             #logger.info(f"insert : {str(key)}")
 
@@ -476,7 +476,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         while len(key) > 0 and child_key in node.children.keys():
             node = node.children[child_key]
             if finished_req == True:
-                self._predictor_access(node)
+                self._predictor_access(node, self.current_ts)
                 node.last_access_ts = self.current_ts
                 #logger.info(f"insert : {str(key)}")
             
