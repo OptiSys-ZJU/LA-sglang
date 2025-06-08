@@ -286,10 +286,11 @@ class BlindOracleRadixCache(BasePrefixCache):
         for node in nodes:
             if node.pred_valid == 0:
                 pred_result = self.predictor.predict(hash(tuple(node.key)))
-                if pred_result == 2**62:
-                    node.pred = pred_result - node.last_access_ts
-                else:
-                    node.pred = pred_result + node.last_access_ts
+                # if pred_result == 2**62:
+                #     node.pred = pred_result - node.last_access_ts
+                # else:
+                #     node.pred = pred_result + node.last_access_ts
+                node.pred = -node.last_access_ts
                 node.pred_valid = 1
 
     def evict(self, num_tokens: int):
@@ -442,17 +443,15 @@ class BlindOracleRadixCache(BasePrefixCache):
     
     def _predictor_access(self, node: TreeNode, current_ts):
         #logger.info(f"pred access key = {hash(tuple(node.key))}")
-        if node.pred_valid == 1:
-            logger.info(f"node.pred = {node.pred}, real access ts: {current_ts}")
         self.predictor.access(hash(tuple(node.key)), current_ts)
         if node.pred_valid == 1:
             logger.info(f"node pred = {node.pred}, truth = {self.current_ts}, interval = {self.current_ts - node.last_access_ts}, node key = {hash(tuple(node.key))}")
         node.pred_valid = 0
 
-        logger.info(f"current ts: {self.current_ts}")
-        if self.current_ts % 100 == 0:
-            captured = self._capture_print()
-            logger.info(f"---------------------------------------------------- tree structure: {captured}")
+        #logger.info(f"current ts: {self.current_ts}")
+        #if self.current_ts % 100 == 0:
+        #    captured = self._capture_print()
+        #    logger.info(f"---------------------------------------------------- tree structure: {captured}")
 
     def _predictor_split(self, original_key, node: TreeNode, new_node: TreeNode):
         self._predictor_feature_copy(original_key, node.key)
