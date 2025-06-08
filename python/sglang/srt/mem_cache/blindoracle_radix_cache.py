@@ -301,12 +301,13 @@ class BlindOracleRadixCache(BasePrefixCache):
         leaves = self._collect_leaves()
         self._predict(leaves)
         heapq.heapify(leaves)
+        logger.info("==============================================")
+        for x in leaves:
+            logger.info(f"x.pred = {x.pred}, x.last_access_ts = {x.last_access_ts}")
 
         num_evicted = 0
-        logger.info("==============================================")
         while num_evicted < num_tokens and len(leaves):
             x = heapq.heappop(leaves)
-            logger.info(f"x.pred = {x.pred}, x.last_access_ts = {x.last_access_ts}")
 
             if x == self.root_node:
                 break
