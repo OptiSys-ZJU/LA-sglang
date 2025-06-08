@@ -318,7 +318,7 @@ class WorkloadGenerator:
                     new_request = self.synthetic_multiturn_requests.popleft()
                     asyncio.create_task(self.handle_request(new_request))
                     self.sent_requests += 1
-                    await asyncio.sleep(0.3)
+                    await asyncio.sleep(0.2)
                 else:
                     await asyncio.sleep(0.05)
                     continue
