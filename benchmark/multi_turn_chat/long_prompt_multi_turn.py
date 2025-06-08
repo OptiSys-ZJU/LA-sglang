@@ -24,8 +24,8 @@ def gen_prompt(tokenizer, token_num):
 
 def get_cache_path(args):
     # Create cache directory under ~/.cache/sglang
-    cache_dir = Path.home() / ".cache" / "sglang"
-
+    cache_dir = "/home/relay/chenpeng12/Experiments/"  #Path.home() / ".cache" / "sglang"
+    
     # Create a unique cache filename based on the arguments that affect generation
     cache_key = f"qa_{args.num_qa}_{args.turns}_{args.system_prompt_len}_{args.len_q}_{args.len_a}_{args.tokenizer.replace('/', '_')}.json"
     return cache_dir / cache_key
