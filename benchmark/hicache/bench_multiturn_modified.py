@@ -247,6 +247,7 @@ class WorkloadGenerator:
         self.extra_needed_prompts = self.concatenate_num * self.num_system_prefix_prompts
         
         self.synthetic_multiturn_512_requests = None
+        self.response_queue = None
 
         if os.path.exists("synthetic_multiturn_512_requests.pkl"):
              print("here !!!!!!!!!!!!!!!!")
