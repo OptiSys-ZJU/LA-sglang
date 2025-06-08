@@ -10,6 +10,7 @@ import time
 import os
 from datetime import datetime
 from typing import Optional
+from collections import deque
 
 import aiohttp
 import requests
@@ -244,54 +245,55 @@ class WorkloadGenerator:
         self.num_system_prefix_prompts = 5
         self.concatenate_num = 1
         self.extra_needed_prompts = self.concatenate_num * self.num_system_prefix_prompts
+        
+        self.synthetic_multiturn_512_requests = None
 
-        if os.path.exists("candidate_inputs.pkl"):
-             with open('candidate_inputs.pkl', 'rb') as f:
-                self.candidate_inputs = pickle.load(f)
-
+        if os.path.exists("synthetic_multiturn_512_requests.pkl"):
+             with open('synthetic_multiturn_512_requests.pkl', 'rb') as f:
+                self.synthetic_multiturn_512_requests = deque(pickle.load(f))
         else:
-            self.raw_candidate_inputs = sample_random_requests(
-                input_len=args.request_length,
-                output_len=args.output_length,
-                num_prompts=args.num_clients * args.num_rounds + self.extra_needed_prompts,
-                range_ratio=1.0,
-                tokenizer=self.tokenizer,
-                dataset_path=args.dataset_path,
-            )
-            for i in range(self.num_system_prefix_prompts):
-                self.system_prefix_prompts.append(self.raw_candidate_inputs[i * self.concatenate_num].prompt)
-                for j in range(1, self.concatenate_num):
-                    self.system_prefix_prompts[-1] = self.system_prefix_prompts[-1] + self.raw_candidate_inputs[i * self.num_system_prefix_prompts + j].prompt
+            if os.path.exists("candidate_inputs.pkl"):
+                with open('candidate_inputs.pkl', 'rb') as f:
+                    self.candidate_inputs = pickle.load(f)
 
-            self.candidate_inputs = []
-            for i in range(self.concatenate_num * self.num_system_prefix_prompts, len(self.raw_candidate_inputs)):
-                random_idx = random.randint(0, len(self.system_prefix_prompts) - 1)
-                system_prefix_prompt = self.system_prefix_prompts[random_idx]
-                self.candidate_inputs.append(system_prefix_prompt + self.raw_candidate_inputs[i].prompt)
-                print(f"i = {i}, init str = {str(self.candidate_inputs[-1])[:20]}")
+            else:
+                self.raw_candidate_inputs = sample_random_requests(
+                    input_len=args.request_length,
+                    output_len=args.output_length,
+                    num_prompts=args.num_clients * args.num_rounds + self.extra_needed_prompts,
+                    range_ratio=1.0,
+                    tokenizer=self.tokenizer,
+                    dataset_path=args.dataset_path,
+                )
+                for i in range(self.num_system_prefix_prompts):
+                    self.system_prefix_prompts.append(self.raw_candidate_inputs[i * self.concatenate_num].prompt)
+                    for j in range(1, self.concatenate_num):
+                        self.system_prefix_prompts[-1] = self.system_prefix_prompts[-1] + self.raw_candidate_inputs[i * self.num_system_prefix_prompts + j].prompt
 
-            with open('candidate_inputs.pkl', 'wb') as f:
-                pickle.dump(self.candidate_inputs, f)
+                self.candidate_inputs = []
+                for i in range(self.concatenate_num * self.num_system_prefix_prompts, len(self.raw_candidate_inputs)):
+                    random_idx = random.randint(0, len(self.system_prefix_prompts) - 1)
+                    system_prefix_prompt = self.system_prefix_prompts[random_idx]
+                    self.candidate_inputs.append(system_prefix_prompt + self.raw_candidate_inputs[i].prompt)
+                    print(f"i = {i}, init str = {str(self.candidate_inputs[-1])[:20]}")
 
-        #for i in range(len(self.candidate_inputs)):
-        #    print(f"len = {len(self.candidate_inputs[i])}, prompt: {self.candidate_inputs[i]}")
-        #    if i > 10:
-        #        break
+                with open('candidate_inputs.pkl', 'wb') as f:
+                    pickle.dump(self.candidate_inputs, f)
 
-        init_requests = [
-            (i, gen_payload(self.candidate_inputs[i], args.output_length))
-            for i in range(args.num_clients)
-        ]
-        self.client_records = {
-            i: {"round": 0, "history": init_requests[i][1]["text"]}
-            for i in range(args.num_clients)
-        }
-        self.ready_queue = []
-        for i in range(self.num_clients):
-            self.ready_queue.append(ReadyQueue(init_requests=init_requests[i: i+1]))
-        self.candidate_inputs = self.candidate_inputs[args.num_clients :]
+            init_requests = [
+                (i, gen_payload(self.candidate_inputs[i], args.output_length))
+                for i in range(args.num_clients)
+            ]
+            self.client_records = {
+                i: {"round": 0, "history": init_requests[i][1]["text"]}
+                for i in range(args.num_clients)
+            }
+            self.ready_queue = []
+            for i in range(self.num_clients):
+                self.ready_queue.append(ReadyQueue(init_requests=init_requests[i: i+1]))
+            self.candidate_inputs = self.candidate_inputs[args.num_clients :]
 
-        self.response_queue = queue.Queue()
+            self.response_queue = queue.Queue()
         self.pbar = tqdm(total=args.num_clients * args.num_rounds)
         self.performance_metrics = {"ttft": [], "latency": []}
 
@@ -306,6 +308,23 @@ class WorkloadGenerator:
             self.response_queue.put((client_id, response))
         except Exception as e:
             print(f"Request failed: {e}")
+
+    def sync_send_request(self):
+        async def request_loop():
+            while True:
+                print(f"sync send reqs")
+                new_request = self.synthetic_multiturn_512_requests.popleft()
+                asyncio.create_task(self.handle_request(new_request))
+                await asyncio.sleep(0.5)
+
+                if self.pbar.n == self.pbar.total:
+                    break
+
+        # Create and run the event loop for asynchronous requests
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(request_loop())
+        loop.close()
 
     def request_sender(self):
         async def request_loop(idx):
@@ -392,8 +411,12 @@ class WorkloadGenerator:
                     break
 
     def run(self):
-        request_thread = threading.Thread(target=self.request_sender, daemon=True)
-        response_thread = threading.Thread(target=self.response_handler, daemon=True)
+        if self.synthetic_multiturn_512_requests is not None:
+            self.sync_send_request()
+
+        else:
+            request_thread = threading.Thread(target=self.request_sender, daemon=True)
+            response_thread = threading.Thread(target=self.response_handler, daemon=True)
 
         self.start_time = time.perf_counter()
         request_thread.start()
@@ -443,9 +466,10 @@ class WorkloadGenerator:
         )
         log_to_jsonl_file(performance_data, args.log_file)
 
-        num_req = len(request_history)
-        with open(f"synthetic_multiturn_{num_req}_requests.pkl", 'wb') as f:
-            pickle.dump(request_history, f)
+        if self.synthetic_multiturn_512_requests is None:
+            num_req = len(request_history)
+            with open(f"synthetic_multiturn_{num_req}_requests.pkl", 'wb') as f:
+                pickle.dump(request_history, f)
 
 if __name__ == "__main__":
     args = parse_args()
