@@ -289,7 +289,7 @@ class BlindOracleRadixCache(BasePrefixCache):
                 if pred_result == 2**62:
                     node.pred = pred_result - node.last_access_ts
                 else:
-                    node.pred = pred_result
+                    node.pred = pred_result + node.last_access_ts
                 node.pred_valid = 1
 
     def evict(self, num_tokens: int):
