@@ -197,7 +197,6 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def cache_finished_req(self, req: Req):
         """Cache request when it finishes."""
-        # logger.info(f"cached finished req !!!!!!!!!!!!!!!!!")
         if self.disable:
             kv_indices = self.req_to_token_pool.req_to_token[
                 req.req_pool_idx, : len(req.origin_input_ids) + len(req.output_ids) - 1
@@ -233,7 +232,6 @@ class BlindOracleRadixCache(BasePrefixCache):
 
     def cache_unfinished_req(self, req: Req):
         """Cache request when it is unfinished."""
-        # logger.info(f"cached UN finished req !!!!!!!!!!!!!!!!!")
         if self.disable:
             return
 
@@ -302,10 +300,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         leaves = self._collect_leaves()
         self._predict(leaves)
         heapq.heapify(leaves)
-        logger.info("==============================================")
-        for x in leaves:
-            logger.info(f"x.pred = {x.pred}, x.last_access_ts = {x.last_access_ts}")
-
+        
         num_evicted = 0
         while num_evicted < num_tokens and len(leaves):
             x = heapq.heappop(leaves)
@@ -442,10 +437,9 @@ class BlindOracleRadixCache(BasePrefixCache):
         return new_node
     
     def _predictor_access(self, node: TreeNode, current_ts):
-        #logger.info(f"pred access key = {hash(tuple(node.key))}")
         self.predictor.access(hash(tuple(node.key)), current_ts)
-        if node.pred_valid == 1:
-            logger.info(f"node pred = {node.pred}, truth = {self.current_ts}, interval = {self.current_ts - node.last_access_ts}, node key = {hash(tuple(node.key))}")
+        #if node.pred_valid == 1:
+         #   logger.info(f"node pred = {node.pred}, truth = {self.current_ts}, interval = {self.current_ts - node.last_access_ts}, node key = {hash(tuple(node.key))}")
         node.pred_valid = 0
 
         #logger.info(f"current ts: {self.current_ts}")
