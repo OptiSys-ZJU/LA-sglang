@@ -452,7 +452,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         if len(key) == 0:
             return 0
         self._predictor_access(node)
-        logger.info(f"insert : {str(key)}")
+        #logger.info(f"insert : {str(key)}")
         node.last_access_ts = time.monotonic()
 
         child_key = self.get_child_key_fn(key)
@@ -461,7 +461,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         while len(key) > 0 and child_key in node.children.keys():
             node = node.children[child_key]
             self._predictor_access(node)
-            logger.info(f"insert : {str(key)}")
+            #logger.info(f"insert : {str(key)}")
             node.last_access_ts = time.monotonic()
             prefix_len = self.key_match_fn(node.key, key)
             total_prefix_length += prefix_len
@@ -470,8 +470,8 @@ class BlindOracleRadixCache(BasePrefixCache):
 
             if prefix_len < len(node.key):
                 original_key = node.key
-                self._predictor_access(node)
-                logger.info(f"insert : {str(key)}")
+                #self._predictor_access(node)
+                #logger.info(f"insert : {str(key)}")
                 new_node = self._split_node(node.key, node, prefix_len)
                 self._split_predictor_copy(original_key, node, new_node)
                 new_node.last_access_ts = time.monotonic()
