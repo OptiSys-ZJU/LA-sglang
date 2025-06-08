@@ -115,7 +115,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             self.access_time_dict[address] = collections.deque()
         elif (self.enable_online_training == 1) \
             and (address in self.feature_history) \
-            and (self.feature_history[0] != np.inf):
+            and (self.feature_history[address][0] != np.inf):
             last_access_time = self.access_time_dict[address][-1]
             self.features.append((*self.feature_history[address], current_ts - last_access_time))
             logger.info(f"#features: {len(self.features)}")
