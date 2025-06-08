@@ -246,12 +246,12 @@ class WorkloadGenerator:
         self.concatenate_num = 1
         self.extra_needed_prompts = self.concatenate_num * self.num_system_prefix_prompts
         
-        self.synthetic_multiturn_512_requests = None
+        self.synthetic_multiturn_requests = None
         self.response_queue = None
 
-        if os.path.exists("synthetic_multiturn_512_requests.pkl"):
-             with open('synthetic_multiturn_512_requests.pkl', 'rb') as f:
-                self.synthetic_multiturn_512_requests = deque(pickle.load(f))
+        if os.path.exists("synthetic_multiturn_256_requests.pkl"):
+             with open('synthetic_multiturn_256_requests.pkl', 'rb') as f:
+                self.synthetic_multiturn_requests = deque(pickle.load(f))
         else:
             if os.path.exists("candidate_inputs.pkl"):
                 with open('candidate_inputs.pkl', 'rb') as f:
@@ -315,7 +315,7 @@ class WorkloadGenerator:
         async def request_loop():
             while True:
                 #print(f"sync send reqs")
-                new_request = self.synthetic_multiturn_512_requests.popleft()
+                new_request = self.synthetic_multiturn_requests.popleft()
                 asyncio.create_task(self.handle_request(new_request))
                 await asyncio.sleep(0.5)
 
@@ -413,8 +413,8 @@ class WorkloadGenerator:
                     break
 
     def run(self):
-        if self.synthetic_multiturn_512_requests is not None:
-            print(f"sync send requests, total = {len(self.synthetic_multiturn_512_requests)}")
+        if self.synthetic_multiturn_requests is not None:
+            print(f"sync send requests, total = {len(self.synthetic_multiturn_requests)}")
             self.sync_send_request()
 
         else:
@@ -469,7 +469,7 @@ class WorkloadGenerator:
         )
         log_to_jsonl_file(performance_data, args.log_file)
 
-        if self.synthetic_multiturn_512_requests is None:
+        if self.synthetic_multiturn_requests is None:
             num_req = len(request_history)
             with open(f"synthetic_multiturn_{num_req}_requests.pkl", 'wb') as f:
                 pickle.dump(request_history, f)
