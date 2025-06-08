@@ -250,7 +250,6 @@ class WorkloadGenerator:
         self.response_queue = None
 
         if os.path.exists("synthetic_multiturn_512_requests.pkl"):
-             print("here !!!!!!!!!!!!!!!!")
              with open('synthetic_multiturn_512_requests.pkl', 'rb') as f:
                 self.synthetic_multiturn_512_requests = deque(pickle.load(f))
         else:
@@ -303,7 +302,7 @@ class WorkloadGenerator:
         try:
             request_history.append(item)
             client_id, payload = item
-            print(f"request len: {str(payload['text'])[:20]}")
+            #print(f"request len: {str(payload['text'])[:20]}")
             response = await async_request_sglang_generate(payload, self.url, self.pbar)
             if self.pbar.n == self.pbar.total:
                 self.finished_time = time.perf_counter()
@@ -315,7 +314,7 @@ class WorkloadGenerator:
     def sync_send_request(self):
         async def request_loop():
             while True:
-                print(f"sync send reqs")
+                #print(f"sync send reqs")
                 new_request = self.synthetic_multiturn_512_requests.popleft()
                 asyncio.create_task(self.handle_request(new_request))
                 await asyncio.sleep(0.5)
@@ -415,6 +414,7 @@ class WorkloadGenerator:
 
     def run(self):
         if self.synthetic_multiturn_512_requests is not None:
+            print(f"sync send requests !")
             self.sync_send_request()
 
         else:
