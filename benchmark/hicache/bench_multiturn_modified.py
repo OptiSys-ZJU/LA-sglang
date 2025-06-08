@@ -240,9 +240,9 @@ class WorkloadGenerator:
         self.sent_requests = 0
         self.completed_requests = 0
 
-        # system_prefix_len = 1800
+        # system_prefix_len = 800
         self.system_prefix_prompts = []
-        self.system_prefix_len = 1800
+        self.system_prefix_len = 800
         self.num_system_prefix_prompts = 5
         self.concatenate_num = int(self.system_prefix_len / args.request_length)
         self.extra_needed_prompts = self.concatenate_num * self.num_system_prefix_prompts
