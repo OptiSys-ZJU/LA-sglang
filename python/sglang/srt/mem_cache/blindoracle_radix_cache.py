@@ -436,6 +436,8 @@ class BlindOracleRadixCache(BasePrefixCache):
     
     def _predictor_access(self, node: TreeNode, current_ts):
         #logger.info(f"pred access key = {hash(tuple(node.key))}")
+        if node.pred_valid == 1:
+            logger.info(f"node.pred = {node.pred}, real access ts: {current_ts}")
         self.predictor.access(hash(tuple(node.key)), current_ts)
         if node.pred_valid == 1:
             logger.info(f"node pred = {node.pred}, truth = {self.current_ts}, interval = {self.current_ts - node.last_access_ts}, node key = {hash(tuple(node.key))}")
