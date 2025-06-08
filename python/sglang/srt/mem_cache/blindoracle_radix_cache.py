@@ -289,7 +289,7 @@ class BlindOracleRadixCache(BasePrefixCache):
                 if pred_result == 2**62:
                     node.pred = pred_result - node.last_access_ts
                 else:
-                    node.pred = pred_result + node.last_access_ts
+                    node.pred = pred_result
                 node.pred_valid = 1
 
     def evict(self, num_tokens: int):
@@ -302,8 +302,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         self._predict(leaves)
         heapq.heapify(leaves)
         logger.info("==============================================")
-        for x in leaves:
-            logger.info(f"x.pred = {x.pred}, x.last_access_ts = {x.last_access_ts}")
+        #for x in leaves:
+        #    logger.info(f"x.pred = {x.pred}, x.last_access_ts = {x.last_access_ts}")
 
         num_evicted = 0
         while num_evicted < num_tokens and len(leaves):
