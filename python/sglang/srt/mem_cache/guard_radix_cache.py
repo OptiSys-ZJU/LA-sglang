@@ -255,13 +255,16 @@ class GuardRadixCache(BasePrefixCache):
 
         return value, node
 
-    def insert(self, key: List, value=None):
+    def insert(self, key: List, value=None, finished_req = False):
         if self.disable:
             return 0
+        
+        if finished_req == True:
+            self.current_ts += 1
 
         if value is None:
             value = [x for x in key]
-        return self._insert_helper(self.root_node, key, value)
+        return self._insert_helper(self.root_node, key, value, finished_req)
 
     def evict(self, num_tokens: int):
         """GUARD eviction algorithm implementation."""
