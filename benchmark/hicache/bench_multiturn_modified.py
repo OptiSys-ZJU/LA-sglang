@@ -311,7 +311,7 @@ class WorkloadGenerator:
 
     def sync_request_sender(self):
         async def request_loop():
-            while len(self.synthetic_multiturn_requests) > 0:
+            while True:
                 #print(f"sync send reqs")
                 if self.sent_requests - self.completed_requests < args.max_parallel:
                     new_request = self.synthetic_multiturn_requests.popleft()
@@ -322,7 +322,7 @@ class WorkloadGenerator:
                     await asyncio.sleep(0.05)
                     continue
 
-                if self.pbar.n == self.pbar.total:
+                if self.pbar.n == self.pbar.total or len(self.synthetic_multiturn_requests) == 0:
                     break
 
         # Create and run the event loop for asynchronous requests
