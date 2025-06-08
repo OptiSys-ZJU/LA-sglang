@@ -291,7 +291,7 @@ class WorkloadGenerator:
 
     def request_sender(self):
         async def request_loop(idx):
-            await asyncio.sleep(idx/8)  # Wait before sending the next request
+            await asyncio.sleep(idx)  # Wait before sending the next request
             while True:
                 current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
@@ -317,7 +317,7 @@ class WorkloadGenerator:
                 #print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}, corres idx: {idx}")
                 # Calculate Poisson-distributed wait time
                 if self.distribution == "poisson":
-                    sleep_time = 5 #random.expovariate(request_rate_map[current_client_id])
+                    sleep_time = 10 #random.expovariate(request_rate_map[current_client_id])
                 elif self.distribution == "uniform":
                     avg_interval = (
                         1.0 / request_rate_map[current_client_id] if request_rate_map[current_client_id]> 0 else 1.0
