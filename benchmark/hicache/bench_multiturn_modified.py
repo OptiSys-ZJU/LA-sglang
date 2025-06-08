@@ -250,7 +250,7 @@ class WorkloadGenerator:
                 self.candidate_inputs = pickle.load(f)
 
         else:
-            self.candidate_inputs = sample_random_requests(
+            self.raw_candidate_inputs = sample_random_requests(
                 input_len=args.request_length,
                 output_len=args.output_length,
                 num_prompts=args.num_clients * args.num_rounds + self.extra_needed_prompts,
@@ -259,14 +259,15 @@ class WorkloadGenerator:
                 dataset_path=args.dataset_path,
             )
             for i in range(self.num_system_prefix_prompts):
-                self.system_prefix_prompts.append(self.candidate_inputs[i * self.concatenate_num].prompt)
+                self.system_prefix_prompts.append(self.raw_candidate_inputs[i * self.concatenate_num].prompt)
                 for j in range(1, self.concatenate_num):
-                    self.system_prefix_prompts[-1] = self.system_prefix_prompts[-1] + self.candidate_inputs[i * self.num_system_prefix_prompts + j].prompt
+                    self.system_prefix_prompts[-1] = self.system_prefix_prompts[-1] + self.raw_candidate_inputs[i * self.num_system_prefix_prompts + j].prompt
 
-            for i in range(self.concatenate_num * self.num_system_prefix_prompts, len(self.candidate_inputs)):
+            self.candidate_inputs = []
+            for i in range(self.concatenate_num * self.num_system_prefix_prompts, len(self.raw_candidate_inputs)):
                 random_idx = random.randint(0, len(self.system_prefix_prompts) - 1)
                 system_prefix_prompt = self.system_prefix_prompts[random_idx]
-                self.candidate_inputs.append(system_prefix_prompt + self.candidate_inputs[i].prompt)
+                self.candidate_inputs.append(system_prefix_prompt + self.raw_candidate_inputs[i].prompt)
                 print(f"i = {i}, init str = {str(self.candidate_inputs[-1])[:20]}")
 
             with open('candidate_inputs.pkl', 'wb') as f:
