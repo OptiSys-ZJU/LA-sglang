@@ -326,9 +326,6 @@ class WorkloadGenerator:
                 if self.pbar.n == self.pbar.total:
                     break
 
-                if len(self.synthetic_multiturn_requests) == 0:
-                    self.pbar.update(1)
-
         # Create and run the event loop for asynchronous requests
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
