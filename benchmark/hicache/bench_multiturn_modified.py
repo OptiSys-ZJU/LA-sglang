@@ -317,7 +317,7 @@ class WorkloadGenerator:
                 #print(f"sync send reqs")
                 new_request = self.synthetic_multiturn_512_requests.popleft()
                 asyncio.create_task(self.handle_request(new_request))
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.1)
 
                 if self.pbar.n == self.pbar.total:
                     break
