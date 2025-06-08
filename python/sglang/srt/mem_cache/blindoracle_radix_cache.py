@@ -398,7 +398,10 @@ class BlindOracleRadixCache(BasePrefixCache):
             if prefix_len < len(child.key):
                 original_key = child.key
                 new_node = self._split_node(child.key, child, prefix_len)
-                self._split_predictor_copy(original_key, child, new_node)
+                self._predictor_split(original_key, node, new_node)
+                # copy ts from node when splitting node
+                new_node.last_access_ts = node.last_access_ts
+                
                 value.append(new_node.value)
                 node = new_node
                 break
