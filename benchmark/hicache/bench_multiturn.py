@@ -23,7 +23,7 @@ from sglang.bench_serving import (
 )
 
 #request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-request_rate_list = [1, 0.5, 0.1, 0.05, 0.01]
+request_rate_list = [1, 0.75, 0.5, 0.03, 0.02]
 request_rate_map = {}
 client_id_to_idx = {}
 idx_to_client_id = {}
