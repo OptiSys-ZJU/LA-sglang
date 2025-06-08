@@ -480,6 +480,7 @@ async def benchmark(
     async for request in get_requests(
         inputs_requests_queue, request_rate, num_actual_requests
     ):
+        print(f"request: {str(request)}")
         tasks.append(
             asyncio.create_task(
                 limited_request_func(
