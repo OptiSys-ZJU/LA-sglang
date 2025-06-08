@@ -303,7 +303,7 @@ class WorkloadGenerator:
             client_id, payload = item
             #print(f"request len: {str(payload['text'])[:20]}")
             response = await async_request_sglang_generate(payload, self.url, self.pbar)
-            if self.pbar.n == self.pbar.total:
+            if self.pbar.n >= self.pbar.total:
                 self.finished_time = time.perf_counter()
             self.response_queue.put((client_id, response))
         except Exception as e:
@@ -323,7 +323,7 @@ class WorkloadGenerator:
                     await asyncio.sleep(0.05)
                     continue
 
-                if self.pbar.n == self.pbar.total:
+                if self.pbar.n >= self.pbar.total:
                     break
 
         # Create and run the event loop for asynchronous requests
@@ -352,7 +352,7 @@ class WorkloadGenerator:
                     await asyncio.sleep(0.05)
                     continue
 
-                if self.pbar.n == self.pbar.total:
+                if self.pbar.n >= self.pbar.total:
                    break
 
                 if current_client_id is None:
@@ -397,7 +397,7 @@ class WorkloadGenerator:
                 self.performance_metrics["latency"].append(response.latency)
                 self.completed_requests += 1
             except queue.Empty:
-                if self.pbar.n == self.pbar.total:
+                if self.pbar.n >= self.pbar.total:
                     break
 
     def response_handler(self):
@@ -428,7 +428,7 @@ class WorkloadGenerator:
                         )
                     )
             except queue.Empty:
-                if self.pbar.n == self.pbar.total:
+                if self.pbar.n >= self.pbar.total:
                     break
 
     def run(self):
