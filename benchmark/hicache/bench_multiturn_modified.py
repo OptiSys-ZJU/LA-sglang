@@ -27,6 +27,7 @@ request_rate_list = [1, 0.75, 0.5, 0.03, 0.02]
 request_rate_map = {}
 client_id_to_idx = {}
 idx_to_client_id = {}
+request_history = []
 
 def parse_args():
     parser = argparse.ArgumentParser(
