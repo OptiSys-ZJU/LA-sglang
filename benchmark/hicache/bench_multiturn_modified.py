@@ -414,7 +414,7 @@ class WorkloadGenerator:
 
     def run(self):
         if self.synthetic_multiturn_512_requests is not None:
-            print(f"sync send requests !")
+            print(f"sync send requests, total = {len(self.synthetic_multiturn_512_requests)}")
             self.sync_send_request()
 
         else:
