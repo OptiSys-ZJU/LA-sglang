@@ -240,6 +240,13 @@ class WorkloadGenerator:
         self.sent_requests = 0
         self.completed_requests = 0
 
+        # system_prefix_len = 1800
+        self.system_prefix_prompts = []
+        self.system_prefix_len = 1800
+        self.num_system_prefix_prompts = 5
+        self.concatenate_num = int(self.system_prefix_len / args.request_length)
+        self.extra_needed_prompts = self.concatenate_num * self.num_system_prefix_prompts
+
         if os.path.exists("candidate_inputs.pkl"):
              with open('candidate_inputs.pkl', 'rb') as f:
                 self.candidate_inputs = pickle.load(f)
@@ -248,12 +255,21 @@ class WorkloadGenerator:
             self.candidate_inputs = sample_random_requests(
                 input_len=args.request_length,
                 output_len=args.output_length,
-                num_prompts=args.num_clients * args.num_rounds,
+                num_prompts=args.num_clients * args.num_rounds + self.extra_needed_prompts,
                 range_ratio=1.0,
                 tokenizer=self.tokenizer,
                 dataset_path=args.dataset_path,
             )
-            self.candidate_inputs = [i.prompt for i in self.candidate_inputs]
+            for i in range(self.num_system_prefix_prompts):
+                self.system_prefix_prompts.append(self.candidate_inputs[i * self.num_system_prefix_prompts])
+                for j in range(1, self.concatenate_num):
+                    self.system_prefix_prompts[-1].prompt + self.candidate_inputs[i * self.num_system_prefix_prompts + j].prompt
+
+            for i in range(self.concatenate_num * self.num_system_prefix_prompts, len(self.candidate_inputs)):
+                random_idx = random.randint(0, len(self.system_prefix_prompts) - 1)
+                system_prefix_prompt = self.system_prefix_prompts[random_idx]
+                self.candidate_inputs.append(system_prefix_prompt + self.candidate_inputs[i].prompt)
+                print(f"i = {i}, len of prefix: {len(self.candidate_inputs[-1])}")
 
             with open('candidate_inputs.pkl', 'wb') as f:
                 pickle.dump(self.candidate_inputs, f)
