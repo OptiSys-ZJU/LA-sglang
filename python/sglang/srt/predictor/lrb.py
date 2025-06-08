@@ -164,7 +164,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         pred = np.expm1(pred)
         logger.info(f"pred final result: {str(pred)}")
         logger.info(f"pred = {str(pred)}, features: {str((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))}")
-        return pred
+        return pred[0]
 
 
 class LRBBinaryPredictor(BinaryPredictor):
