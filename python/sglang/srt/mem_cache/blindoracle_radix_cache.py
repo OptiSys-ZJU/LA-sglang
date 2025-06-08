@@ -58,7 +58,7 @@ class TreeNode:
         self.key = None
         self.value = None
         self.lock_ref = 0
-        self.last_access_ts = 0 #time.monotonic()
+        self.last_access_ts = 0
         self.pred = 0
         self.pred_valid = 0
 
@@ -124,6 +124,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         #self.predictor = PLECOPredictor()
         self.predictor = LRBReuseDistancePredictor()
 
+        self.current_ts = 0
+
         if self.token_to_kv_pool_allocator:
             self.device = self.token_to_kv_pool_allocator.device
         else:
@@ -181,13 +183,17 @@ class BlindOracleRadixCache(BasePrefixCache):
 
         return value, last_node
 
-    def insert(self, key: List, value=None):
+    def insert(self, key: List, value=None, finished_req = False):
         if self.disable:
             return 0
+        
+        # increase ts whenever a new request processed
+        if finished_req == True:
+            self.current_ts += 1
 
         if value is None:
             value = [x for x in key]
-        return self._insert_helper(self.root_node, key, value)
+        return self._insert_helper(self.root_node, key, value, finished_req)
 
     def cache_finished_req(self, req: Req):
         """Cache request when it finishes."""
@@ -214,8 +220,8 @@ class BlindOracleRadixCache(BasePrefixCache):
             page_aligned_kv_indices = kv_indices.clone()
 
         # Radix Cache takes one ref in memory pool
-        new_prefix_len = self.insert(
-            token_ids[:page_aligned_len], page_aligned_kv_indices
+        new_prefix_len = self.insert( 
+            token_ids[:page_aligned_len], page_aligned_kv_indices, True
         )
         self.token_to_kv_pool_allocator.free(
             kv_indices[len(req.prefix_indices) : new_prefix_len]
@@ -383,18 +389,14 @@ class BlindOracleRadixCache(BasePrefixCache):
     ##### Internal Helper Functions #####
 
     def _match_prefix_helper(self, node: TreeNode, key: List):
-        #self._predictor_access(node)
-
         child_key = self.get_child_key_fn(key)
         
         value = []
         while len(key) > 0 and child_key in node.children.keys():
             child = node.children[child_key]
-            #self._predictor_access(child)
             prefix_len = self.key_match_fn(child.key, key)
             if prefix_len < len(child.key):
                 original_key = child.key
-                #self._predictor_access(child)
                 new_node = self._split_node(child.key, child, prefix_len)
                 self._split_predictor_copy(original_key, child, new_node)
                 value.append(new_node.value)
@@ -433,39 +435,51 @@ class BlindOracleRadixCache(BasePrefixCache):
         logger.info(f"pred access key = {hash(tuple(node.key))}")
         self.predictor.access(hash(tuple(node.key)))
         if node.pred_valid == 1:
-            logger.info(f"node pred = {node.pred}, truth = {time.monotonic()}, interval = {time.monotonic() - node.last_access_ts}, node key = {hash(tuple(node.key))}")
+            logger.info(f"node pred = {node.pred}, truth = {self.current_ts}, interval = {self.current_ts - node.last_access_ts}, node key = {hash(tuple(node.key))}")
         node.pred_valid = 0
 
         #if self.access_ts % 100 == 0:
         #captured = self._capture_print()
         #logger.info(f"---------------------------------------------------- tree structure: {captured}")
 
-    def _split_predictor_copy(self, original_key, node: TreeNode, new_node: TreeNode):
-        self.predictor.split_copy(hash(tuple(original_key)), hash(tuple(node.key)), hash(tuple(new_node.key)))
-        new_node.last_access_ts = node.last_access_ts
-        node.pred_valid = 0
-        new_node.pred_valid = 0
+    def _predictor_split(self, original_key, node: TreeNode, new_node: TreeNode):
+        self._predictor_feature_copy(original_key, node.key)
+        self._predictor_feature_copy(original_key, new_node.key)
+        #self.predictor.feature_delete(original_key)
 
-    def _predictor_spawn_access(self, node: TreeNode, new_node: TreeNode):
-        self.predictor.spawn_access(hash(tuple(node.key)), hash(tuple(new_node.key)))
-        new_node.pred_valid = 0
+        # copy pred from original node
+        new_node.pred_valid = node.pred_valid
+        new_node.pred = node.pred
 
-    def _insert_helper(self, node: TreeNode, key: List, value):
+    def _predictor_feature_copy(self, key, new_key):
+        self.predictor.feature_copy(hash(tuple(key)), hash(tuple(new_key)))
+
+    def _predictor_spawn(self, node: TreeNode, new_node: TreeNode):
+        self._predictor_feature_copy(node.key, new_node.key)
+        # copy pred from parent node
+        new_node.pred_valid = node.pred_valid
+        new_node.pred = node.pred
+
+    def _insert_helper(self, node: TreeNode, key: List, value, finished_req):
         if len(key) == 0:
             return 0
         logger.info(f"insert keys: {str(key)}")
-        self._predictor_access(node)
-        #logger.info(f"insert : {str(key)}")
-        node.last_access_ts = time.monotonic()
+        # update ts and features only when the request is finished
+        if finished_req == True:
+            self._predictor_access(node)
+            node.last_access_ts = self.current_ts
+            #logger.info(f"insert : {str(key)}")
 
         child_key = self.get_child_key_fn(key)
 
         total_prefix_length = 0
         while len(key) > 0 and child_key in node.children.keys():
             node = node.children[child_key]
-            self._predictor_access(node)
-            #logger.info(f"insert : {str(key)}")
-            node.last_access_ts = time.monotonic()
+            if finished_req == True:
+                self._predictor_access(node)
+                node.last_access_ts = self.current_ts
+                #logger.info(f"insert : {str(key)}")
+            
             prefix_len = self.key_match_fn(node.key, key)
             total_prefix_length += prefix_len
             key = key[prefix_len:]
@@ -473,11 +487,12 @@ class BlindOracleRadixCache(BasePrefixCache):
 
             if prefix_len < len(node.key):
                 original_key = node.key
-                #self._predictor_access(node)
                 #logger.info(f"insert : {str(key)}")
                 new_node = self._split_node(node.key, node, prefix_len)
-                self._split_predictor_copy(original_key, node, new_node)
-                new_node.last_access_ts = time.monotonic()
+                self._predictor_split(original_key, node, new_node)
+
+                # copy ts from node when splitting node
+                new_node.last_access_ts = node.last_access_ts
                 node = new_node
 
             if len(key):
@@ -488,9 +503,9 @@ class BlindOracleRadixCache(BasePrefixCache):
             new_node.parent = node
             new_node.key = key
             new_node.value = value
-            self._predictor_spawn_access(node, new_node)
-            new_node.last_access_ts = time.monotonic()
-            #self._predictor_access(new_node)
+            self._predictor_spawn(node, new_node)
+            # copy ts from parent node when spawning node
+            new_node.last_access_ts = node.last_access_ts
             node.children[child_key] = new_node
             self.evictable_size_ += len(value)
             self._record_store_event(new_node)
