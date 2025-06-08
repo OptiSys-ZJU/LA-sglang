@@ -3,8 +3,11 @@ import asyncio
 import json
 import queue
 import random
+import pickle
 import threading
+import random
 import time
+import os
 from datetime import datetime
 from typing import Optional
 
@@ -19,6 +22,11 @@ from sglang.bench_serving import (
     sample_random_requests,
 )
 
+#request_rate_list = [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+request_rate_list = [1, 0.75, 0.5, 0.03, 0.02]
+request_rate_map = {}
+client_id_to_idx = {}
+idx_to_client_id = {}
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -224,22 +232,35 @@ class WorkloadGenerator:
 
         self.tokenizer = get_tokenizer(args.model_path)
         self.distribution = args.distribution
-        self.request_rate = args.request_rate
         self.start_time = None
         self.finished_time = None
+        self.num_clients = args.num_clients
 
         self.sent_requests = 0
         self.completed_requests = 0
 
-        self.candidate_inputs = sample_random_requests(
-            input_len=args.request_length,
-            output_len=args.output_length,
-            num_prompts=args.num_clients * args.num_rounds,
-            range_ratio=1.0,
-            tokenizer=self.tokenizer,
-            dataset_path=args.dataset_path,
-        )
-        self.candidate_inputs = [i[0] for i in self.candidate_inputs]
+        if os.path.exists("candidate_inputs.pkl"):
+             with open('candidate_inputs.pkl', 'rb') as f:
+                self.candidate_inputs = pickle.load(f)
+
+        else:
+            self.candidate_inputs = sample_random_requests(
+                input_len=args.request_length,
+                output_len=args.output_length,
+                num_prompts=args.num_clients * args.num_rounds,
+                range_ratio=1.0,
+                tokenizer=self.tokenizer,
+                dataset_path=args.dataset_path,
+            )
+            self.candidate_inputs = [i.prompt for i in self.candidate_inputs]
+
+            with open('candidate_inputs.pkl', 'wb') as f:
+                pickle.dump(self.candidate_inputs, f)
+
+        #for i in range(len(self.candidate_inputs)):
+        #    print(f"len = {len(self.candidate_inputs[i])}, prompt: {self.candidate_inputs[i]}")
+        #    if i > 10:
+        #        break
 
         init_requests = [
             (i, gen_payload(self.candidate_inputs[i], args.output_length))
@@ -249,7 +270,9 @@ class WorkloadGenerator:
             i: {"round": 0, "history": init_requests[i][1]["text"]}
             for i in range(args.num_clients)
         }
-        self.ready_queue = ReadyQueue(init_requests=init_requests)
+        self.ready_queue = []
+        for i in range(self.num_clients):
+            self.ready_queue.append(ReadyQueue(init_requests=init_requests[i: i+1]))
         self.candidate_inputs = self.candidate_inputs[args.num_clients :]
 
         self.response_queue = queue.Queue()
@@ -267,11 +290,19 @@ class WorkloadGenerator:
             print(f"Request failed: {e}")
 
     def request_sender(self):
-        async def request_loop():
+        async def request_loop(idx):
+            await asyncio.sleep(idx)  # Wait before sending the next request
             while True:
+                current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
-                    new_request = self.ready_queue.pop()
+                    new_request = self.ready_queue[idx].pop()
                     if new_request:
+                        current_client_id, _ = new_request
+                        if current_client_id not in request_rate_map:
+                            request_rate_map[current_client_id] = request_rate_list[idx % len(request_rate_list)]
+                            client_id_to_idx[current_client_id] = idx
+                            idx_to_client_id[idx] = current_client_id
+                            #print(f"register, idx = {idx}, client_id = {current_client_id}")
                         asyncio.create_task(self.handle_request(new_request))
                         self.sent_requests += 1
                 else:
@@ -279,25 +310,37 @@ class WorkloadGenerator:
                     continue
 
                 if self.pbar.n == self.pbar.total:
-                    break
+                   break
 
+                if current_client_id is None:
+                    current_client_id = idx_to_client_id[idx]
+                #print(f"client_id: {current_client_id}, request_rate: {request_rate_map[current_client_id]}, corres idx: {idx}")
                 # Calculate Poisson-distributed wait time
                 if self.distribution == "poisson":
-                    sleep_time = 10 #random.expovariate(self.request_rate)
+                    sleep_time = 10 #random.expovariate(request_rate_map[current_client_id])
                 elif self.distribution == "uniform":
                     avg_interval = (
-                        1.0 / self.request_rate if self.request_rate > 0 else 1.0
+                        1.0 / request_rate_map[current_client_id] if request_rate_map[current_client_id]> 0 else 1.0
                     )
                     sleep_time = random.uniform(0, 2 * avg_interval)
                 else:
                     raise ValueError("Invalid distribution type")
+                #print(f"sleep_time: {sleep_time}")
                 await asyncio.sleep(sleep_time)  # Wait before sending the next request
 
-        # Create and run the event loop for asynchronous requests
+        async def main():
+            tasks = [asyncio.create_task(request_loop(idx)) for idx in range(self.num_clients)]
+            await asyncio.gather(*tasks)
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(request_loop())
+        loop.run_until_complete(main())
         loop.close()
+        # Create and run the event loop for asynchronous requests
+        #loop = asyncio.new_event_loop()
+        #asyncio.set_event_loop(loop)
+        #loop.run_until_complete(request_loop())
+        #loop.close()
 
     def response_handler(self):
         while True:
@@ -317,7 +360,7 @@ class WorkloadGenerator:
                     self.client_records[client_id][
                         "history"
                     ] += self.candidate_inputs.pop()
-                    self.ready_queue.append(
+                    self.ready_queue[client_id_to_idx[client_id]].append(
                         (
                             client_id,
                             gen_payload(
@@ -345,7 +388,6 @@ class WorkloadGenerator:
         performance_data = {
             "summary": {
                 "total_requests": len(self.performance_metrics["ttft"]),
-                "request_rate": self.request_rate,
                 "average_ttft": sum(self.performance_metrics["ttft"])
                 / len(self.performance_metrics["ttft"]),
                 "p90_ttft": sorted(self.performance_metrics["ttft"])[
@@ -368,7 +410,7 @@ class WorkloadGenerator:
         print("All requests completed")
         print("Performance metrics summary:")
         print(
-            f"  Total requests: {performance_data['summary']['total_requests']} at {performance_data['summary']['request_rate']} requests per second"
+            f"  Total requests: {performance_data['summary']['total_requests']}"
         )
         print(f"  Average TTFT: {performance_data['summary']['average_ttft']:.2f}")
         print(f"  P90 TTFT: {performance_data['summary']['p90_ttft']:.2f}")
@@ -388,8 +430,9 @@ if __name__ == "__main__":
     args = parse_args()
     flush_cache_url = f"http://{args.host}:{args.port}/flush_cache"
 
-    for request_rate in [16] #, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:
-        args.request_rate = request_rate
-        requests.post(flush_cache_url)
-        time.sleep(1)
-        WorkloadGenerator(args).run()
+    #for request_rate in [16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]:
+    #for request_rate in [16]:
+    #    args.request_rate = request_rate
+    requests.post(flush_cache_url)
+    time.sleep(1)
+    WorkloadGenerator(args).run()
