@@ -247,7 +247,6 @@ class WorkloadGenerator:
         self.extra_needed_prompts = self.concatenate_num * self.num_system_prefix_prompts
         
         self.synthetic_multiturn_requests = None
-        self.response_queue = None
 
         if os.path.exists("synthetic_multiturn_256_requests.pkl"):
              with open('synthetic_multiturn_256_requests.pkl', 'rb') as f:
@@ -294,7 +293,7 @@ class WorkloadGenerator:
                 self.ready_queue.append(ReadyQueue(init_requests=init_requests[i: i+1]))
             self.candidate_inputs = self.candidate_inputs[args.num_clients :]
 
-            self.response_queue = queue.Queue()
+        self.response_queue = queue.Queue()
         self.pbar = tqdm(total=args.num_clients * args.num_rounds)
         self.performance_metrics = {"ttft": [], "latency": []}
 
@@ -306,8 +305,7 @@ class WorkloadGenerator:
             response = await async_request_sglang_generate(payload, self.url, self.pbar)
             if self.pbar.n == self.pbar.total:
                 self.finished_time = time.perf_counter()
-            if self.response_queue is not None:
-                self.response_queue.put((client_id, response))
+            self.response_queue.put((client_id, response))
         except Exception as e:
             print(f"Request failed: {e}")
 
