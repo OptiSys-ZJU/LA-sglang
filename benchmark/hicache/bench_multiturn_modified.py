@@ -298,7 +298,7 @@ class WorkloadGenerator:
         try:
             request_history.append(item)
             client_id, payload = item
-            print(f"request len: {len(payload['text'])}")
+            print(f"request len: {str(payload['text'])[:20]}")
             response = await async_request_sglang_generate(payload, self.url, self.pbar)
             if self.pbar.n == self.pbar.total:
                 self.finished_time = time.perf_counter()
