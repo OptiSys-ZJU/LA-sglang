@@ -970,7 +970,7 @@ def get_gen_prefix_cache_path(args, tokenizer):
             {args.gsp_system_prompt_len}_{args.gsp_question_len}_{args.gsp_output_len}_ \
             {tokenizer.__class__.__name__}.pkl"
     
-    return cache_path
+    return Path(cache_path)
 
 def sample_generated_shared_prefix_requests(
     num_groups: int,
