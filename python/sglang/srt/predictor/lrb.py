@@ -48,7 +48,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
         self.existing_online_training = 0
         self.feature_history = {}
         self.features = collections.deque()
-        self.enable_online_training = 0
+        self.enable_online_training = 1
         
         self.deltas = [{} for _ in range(self.delta_nums)]
         self.edcs = [{} for _ in range(self.edc_nums)]
