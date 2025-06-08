@@ -159,7 +159,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
     def predict(self, address):
         if (address not in self.access_time_dict) or len(self.access_time_dict[address]) == 1:
             return 2**62
-        pred = self._model((*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
+        pred = self._model(1, address, (*[self.deltas[i][address] for i in range(self.delta_nums)], *[self.edcs[i][address] for i in range(self.edc_nums)]))
         logger.info(f"pred init result: {str(pred)}")
         pred = np.expm1(pred)
         logger.info(f"pred final result: {str(pred)}")
