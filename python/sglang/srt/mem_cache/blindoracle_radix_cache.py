@@ -285,7 +285,11 @@ class BlindOracleRadixCache(BasePrefixCache):
     def _predict(self, nodes: List[TreeNode]):
         for node in nodes:
             if node.pred_valid == 0:
-                node.pred = node.last_access_ts + self.predictor.predict(hash(tuple(node.key)))
+                pred_result = self.predictor.predict(hash(tuple(node.key)))
+                if pred_result == 2**62:
+                    node.pred = pred_result - node.last_access_ts
+                else:
+                    node.pred = pred_result + node.last_access_ts
                 node.pred_valid = 1
 
     def evict(self, num_tokens: int):
