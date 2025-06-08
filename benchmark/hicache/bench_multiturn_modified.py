@@ -261,9 +261,9 @@ class WorkloadGenerator:
                 dataset_path=args.dataset_path,
             )
             for i in range(self.num_system_prefix_prompts):
-                self.system_prefix_prompts.append(self.candidate_inputs[i * self.num_system_prefix_prompts])
+                self.system_prefix_prompts.append(self.candidate_inputs[i * self.num_system_prefix_prompts].prompt)
                 for j in range(1, self.concatenate_num):
-                    self.system_prefix_prompts[-1].prompt + self.candidate_inputs[i * self.num_system_prefix_prompts + j].prompt
+                    self.system_prefix_prompts[-1] + self.candidate_inputs[i * self.num_system_prefix_prompts + j].prompt
 
             for i in range(self.concatenate_num * self.num_system_prefix_prompts, len(self.candidate_inputs)):
                 random_idx = random.randint(0, len(self.system_prefix_prompts) - 1)
