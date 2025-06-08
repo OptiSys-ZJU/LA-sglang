@@ -458,10 +458,11 @@ class BlindOracleRadixCache(BasePrefixCache):
         self.predictor.feature_copy(hash(tuple(key)), hash(tuple(new_key)))
 
     def _predictor_spawn(self, node: TreeNode, new_node: TreeNode):
-        self._predictor_feature_copy(node.key, new_node.key)
+        #self._predictor_feature_copy(node.key, new_node.key)
         # copy pred from parent node
-        new_node.pred_valid = node.pred_valid
-        new_node.pred = node.pred
+        #new_node.pred_valid = node.pred_valid
+        #new_node.pred = node.pred
+        pass
 
     def _insert_helper(self, node: TreeNode, key: List, value, finished_req):
         if len(key) == 0:
