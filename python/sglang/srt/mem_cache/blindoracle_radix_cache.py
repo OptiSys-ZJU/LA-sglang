@@ -306,7 +306,7 @@ class BlindOracleRadixCache(BasePrefixCache):
         logger.info("==============================================")
         while num_evicted < num_tokens and len(leaves):
             x = heapq.heappop(leaves)
-            logger.info(f"x.pred = {x.pred}")
+            logger.info(f"x.pred = {x.pred}, x.last_access_ts = {x.last_access_ts}")
 
             if x == self.root_node:
                 break
