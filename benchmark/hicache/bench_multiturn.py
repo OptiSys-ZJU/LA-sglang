@@ -291,7 +291,7 @@ class WorkloadGenerator:
 
     def request_sender(self):
         async def request_loop(idx):
-            await asyncio.sleep(idx/2)  # Wait before sending the next request
+            await asyncio.sleep(idx/8)  # Wait before sending the next request
             while True:
                 current_client_id = None
                 if self.sent_requests - self.completed_requests < args.max_parallel:
