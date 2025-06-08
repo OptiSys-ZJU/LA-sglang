@@ -322,6 +322,8 @@ class WorkloadGenerator:
                 else:
                     await asyncio.sleep(0.05)
                     continue
+                
+                print(f"self.pbar.n : {self.pbar.n }")
 
                 if self.pbar.n >= self.pbar.total:
                     break
