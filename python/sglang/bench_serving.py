@@ -966,8 +966,8 @@ def get_gen_prefix_cache_path(args, tokenizer):
     cache_dir = "/home/relay/chenpeng12/Experiments"
 
     # Create a unique cache filename based on the generation parameters
-    cache_path =f"{cache_dir}/gen_prefix_{args.gen_num_groups}_{args.gen_prompts_per_group}_ \
-            {args.gen_system_prompt_len}_{args.gen_question_len}_{args.gen_output_len}_ \
+    cache_path =f"{cache_dir}/gen_prefix_{args.gsp_num_groups}_{args.gsp_prompts_per_group}_ \
+            {args.gsp_system_prompt_len}_{args.gsp_question_len}_{args.gsp_output_len}_ \
             {tokenizer.__class__.__name__}.pkl"
     
     return cache_path
