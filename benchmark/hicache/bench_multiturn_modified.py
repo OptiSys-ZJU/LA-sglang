@@ -247,8 +247,9 @@ class WorkloadGenerator:
         self.extra_needed_prompts = self.concatenate_num * self.num_system_prefix_prompts
         
         self.synthetic_multiturn_requests = None
+        self.load_local = False
 
-        if os.path.exists("synthetic_multiturn_256_requests.pkl"):
+        if self.load_local and os.path.exists("synthetic_multiturn_256_requests.pkl"):
              with open('synthetic_multiturn_256_requests.pkl', 'rb') as f:
                 self.synthetic_multiturn_requests = deque(pickle.load(f))
         else:
