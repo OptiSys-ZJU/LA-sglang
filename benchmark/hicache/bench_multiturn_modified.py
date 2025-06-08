@@ -311,13 +311,18 @@ class WorkloadGenerator:
         except Exception as e:
             print(f"Request failed: {e}")
 
-    def sync_send_request(self):
+    def sync_request_sender(self):
         async def request_loop():
-            while True:
+            while len(self.synthetic_multiturn_requests) > 0:
                 #print(f"sync send reqs")
-                new_request = self.synthetic_multiturn_requests.popleft()
-                asyncio.create_task(self.handle_request(new_request))
-                await asyncio.sleep(0.5)
+                if self.sent_requests - self.completed_requests < args.max_parallel:
+                    new_request = self.synthetic_multiturn_requests.popleft()
+                    asyncio.create_task(self.handle_request(new_request))
+                    self.sent_requests += 1
+                    await asyncio.sleep(0.5)
+                else:
+                    await asyncio.sleep(0.05)
+                    continue
 
                 if self.pbar.n == self.pbar.total:
                     break
@@ -381,6 +386,21 @@ class WorkloadGenerator:
         #loop.run_until_complete(request_loop())
         #loop.close()
 
+    def sync_response_handler(self):
+        while True:
+            try:
+                client_id, response = self.response_queue.get(
+                    timeout=10
+                )  # Block until response is available
+                if not response.success:
+                    raise ValueError(f"Request failed with error: {response.error}")
+                self.performance_metrics["ttft"].append(response.ttft)
+                self.performance_metrics["latency"].append(response.latency)
+                self.completed_requests += 1
+            except queue.Empty:
+                if self.pbar.n == self.pbar.total:
+                    break
+
     def response_handler(self):
         while True:
             try:
@@ -415,19 +435,27 @@ class WorkloadGenerator:
     def run(self):
         if self.synthetic_multiturn_requests is not None:
             print(f"sync send requests, total = {len(self.synthetic_multiturn_requests)}")
-            self.sync_send_request()
+            sync_request_thread = threading.Thread(target=self.sync_request_sender, daemon=True)
+            sync_response_thread = threading.Thread(target=self.sync_response_handler, daemon=True)
 
+            self.start_time = time.perf_counter()
+            sync_request_thread.start()
+            sync_response_thread.start()
+
+            sync_request_thread.join()
+            sync_response_thread.join()
+            self.pbar.close()
         else:
             request_thread = threading.Thread(target=self.request_sender, daemon=True)
             response_thread = threading.Thread(target=self.response_handler, daemon=True)
 
-        self.start_time = time.perf_counter()
-        request_thread.start()
-        response_thread.start()
+            self.start_time = time.perf_counter()
+            request_thread.start()
+            response_thread.start()
 
-        request_thread.join()
-        response_thread.join()
-        self.pbar.close()
+            request_thread.join()
+            response_thread.join()
+            self.pbar.close()
 
         performance_data = {
             "summary": {

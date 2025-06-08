@@ -16,6 +16,7 @@ import asyncio
 import json
 import os
 import random
+import pickle
 import sys
 import time
 import traceback
@@ -772,7 +773,12 @@ def run_benchmark(args_: argparse.Namespace):
 
     tokenizer = get_tokenizer(tokenizer_id)
 
-    input_requests = get_dataset(args, tokenizer)
+    input_requests = None
+    if args.dataset_name == "synthetic":
+        with open('synthetic_multiturn_256_requests.pkl', 'rb') as f:
+            input_requests = pickle.load(f)
+    else:
+        input_requests = get_dataset(args, tokenizer)
 
     return asyncio.run(
         benchmark(
