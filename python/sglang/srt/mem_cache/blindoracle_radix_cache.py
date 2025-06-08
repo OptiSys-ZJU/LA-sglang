@@ -303,8 +303,8 @@ class BlindOracleRadixCache(BasePrefixCache):
         self._predict(leaves)
         heapq.heapify(leaves)
         logger.info("==============================================")
-        #for x in leaves:
-        #    logger.info(f"x.pred = {x.pred}, x.last_access_ts = {x.last_access_ts}")
+        for x in leaves:
+            logger.info(f"x.pred = {x.pred}, x.last_access_ts = {x.last_access_ts}")
 
         num_evicted = 0
         while num_evicted < num_tokens and len(leaves):
