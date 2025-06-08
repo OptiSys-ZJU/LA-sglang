@@ -294,7 +294,7 @@ class WorkloadGenerator:
             self.candidate_inputs = self.candidate_inputs[args.num_clients :]
 
         self.response_queue = queue.Queue()
-        self.pbar = tqdm(total=args.num_clients * args.num_rounds-5)
+        self.pbar = tqdm(total=args.num_clients * args.num_rounds-10)
         self.performance_metrics = {"ttft": [], "latency": []}
 
     async def handle_request(self, item):
