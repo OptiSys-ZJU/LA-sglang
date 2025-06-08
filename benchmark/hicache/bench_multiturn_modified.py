@@ -240,11 +240,9 @@ class WorkloadGenerator:
         self.sent_requests = 0
         self.completed_requests = 0
 
-        # system_prefix_len = 200
         self.system_prefix_prompts = []
-        self.system_prefix_len = 200
         self.num_system_prefix_prompts = 5
-        self.concatenate_num = int(self.system_prefix_len / args.request_length)
+        self.concatenate_num = 1
         self.extra_needed_prompts = self.concatenate_num * self.num_system_prefix_prompts
 
         if os.path.exists("candidate_inputs.pkl"):
@@ -299,6 +297,7 @@ class WorkloadGenerator:
     async def handle_request(self, item):
         try:
             request_history.append(item)
+            print(f"request len: {len(item)}")
             client_id, payload = item
             response = await async_request_sglang_generate(payload, self.url, self.pbar)
             if self.pbar.n == self.pbar.total:
