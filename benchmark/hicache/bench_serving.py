@@ -96,6 +96,8 @@ async def async_request_openai_completions(
 
         prompt_idx = request_func_input.finished_prompts
         messages = request_func_input.prev_messages
+        if prompt_idx > len(request_func_input.prompts):
+            print(f"prompt_id: {prompt_idx}, total_len: {len(request_func_input.prompts)}")
         prompt, input_len, max_tokens = request_func_input.prompts[prompt_idx]
         prompt_len = sum(
             prompt[1] + prompt[2]  # input_len + output_len
