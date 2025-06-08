@@ -111,6 +111,7 @@ class LRBReuseDistancePredictor(ReuseDistancePredictor):
             self.feature_history[new_address] = [*[self.deltas[i][new_address] for i in range(self.delta_nums)], *[self.edcs[i][new_address] for i in range(self.edc_nums)]]
 
     def access(self, address, current_ts):
+        logger.info(f"access address: {address}")
         add_to_feature_history = True
 
         if address not in self.access_time_dict:
