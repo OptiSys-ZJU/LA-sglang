@@ -249,6 +249,7 @@ class WorkloadGenerator:
         self.synthetic_multiturn_512_requests = None
 
         if os.path.exists("synthetic_multiturn_512_requests.pkl"):
+             print("here !!!!!!!!!!!!!!!!")
              with open('synthetic_multiturn_512_requests.pkl', 'rb') as f:
                 self.synthetic_multiturn_512_requests = deque(pickle.load(f))
         else:
