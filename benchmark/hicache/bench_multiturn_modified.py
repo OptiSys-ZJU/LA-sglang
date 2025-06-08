@@ -267,7 +267,7 @@ class WorkloadGenerator:
                 random_idx = random.randint(0, len(self.system_prefix_prompts) - 1)
                 system_prefix_prompt = self.system_prefix_prompts[random_idx]
                 self.candidate_inputs.append(system_prefix_prompt + self.candidate_inputs[i].prompt)
-                print(f"i = {i}, len of prefix: {len(self.candidate_inputs[-1])}")
+                print(f"i = {i}, init str = {str(self.candidate_inputs[-1])[:20]}")
 
             with open('candidate_inputs.pkl', 'wb') as f:
                 pickle.dump(self.candidate_inputs, f)
