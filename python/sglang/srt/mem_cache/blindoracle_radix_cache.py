@@ -441,9 +441,9 @@ class BlindOracleRadixCache(BasePrefixCache):
             logger.info(f"node pred = {node.pred}, truth = {self.current_ts}, interval = {self.current_ts - node.last_access_ts}, node key = {hash(tuple(node.key))}")
         node.pred_valid = 0
 
-        #if self.access_ts % 100 == 0:
-        #captured = self._capture_print()
-        #logger.info(f"---------------------------------------------------- tree structure: {captured}")
+        if self.current_ts % 100 == 0:
+            captured = self._capture_print()
+            logger.info(f"---------------------------------------------------- tree structure: {captured}")
 
     def _predictor_split(self, original_key, node: TreeNode, new_node: TreeNode):
         self._predictor_feature_copy(original_key, node.key)
